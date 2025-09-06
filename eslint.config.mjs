@@ -16,6 +16,9 @@ export default [
         window: 'readonly',
         console: 'readonly',
         URL: 'readonly',
+        Headers: 'readonly',
+        Request: 'readonly',
+        Response: 'readonly',
       },
     },
     plugins: {
