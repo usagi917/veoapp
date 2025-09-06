@@ -180,3 +180,49 @@ describe('POST /api/generate (8秒×1)', () => {
     expect((res.body as unknown as { ops: string[] }).ops).toEqual(['op-2']);
   });
 });
+
+describe('POST /api/generate (16秒×2)', () => {
+  beforeEach(() => {
+    process.env.SESSION_SECRET = 'secret-1234567890';
+    vi.clearAllMocks();
+  });
+
+  it('正常系: 16秒 → op を2つ返す（usedScriptも2つ）', async () => {
+    const mk = makeClient as unknown as { mockReturnValueOnce: (v: unknown) => void };
+    mk.mockReturnValueOnce({
+      models: {
+        generateVideos: vi.fn().mockResolvedValueOnce({ operation: 'op-A' }),
+      },
+    });
+    mk.mockReturnValueOnce({
+      models: {
+        generateVideos: vi.fn().mockResolvedValueOnce({ operation: 'op-B' }),
+      },
+    });
+
+    const sid = 's-16';
+    const csrf = issueCsrfToken(sid);
+    const headers = new Headers({ Cookie: `sid=${sid}` });
+    const script =
+      '自己紹介するね。わたしはラムだっちゃ。電撃ビビビの星から来たの。地球の文化は面白いね。今日はピクトークのデモを見せるっちゃ。まずは台本を短く整えるよ。次に8秒ごとに分けるんだっちゃ。最後に楽しく話して完成だっちゃ。準備はいいかや？';
+
+    const res = await postGenerate({
+      headers,
+      body: {
+        image: pngDataUrl,
+        script,
+        voice: { gender: 'male', tone: 'normal' },
+        motion: 'smile',
+        microPan: true,
+        lengthSec: 16,
+        consent: true,
+        csrf,
+      },
+    });
+
+    expect(res.status).toBe(200);
+    const body = res.body as unknown as { ops: string[]; usedScript: string[] };
+    expect(body.ops).toEqual(['op-A', 'op-B']);
+    expect(body.usedScript).toHaveLength(2);
+  });
+});

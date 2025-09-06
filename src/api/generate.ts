@@ -93,13 +93,13 @@ export async function postGenerate({
   const lengthSec = body.lengthSec;
   const consent = body.consent === true;
 
-  if (!consent || lengthSec !== 8) {
+  if (!consent || (lengthSec !== 8 && lengthSec !== 16)) {
     return { status: 400, headers: resHeaders, body: { error: 'invalid_input' } };
   }
   const parsed = parsePngDataUrl(image);
   if (!parsed) return { status: 400, headers: resHeaders, body: { error: 'invalid_input' } };
 
-  const { segments } = fitScriptAndSplit(script, 8, tone);
+  const { segments } = fitScriptAndSplit(script, (lengthSec as 8 | 16) ?? 8, tone);
   const { prompt, negative } = buildPrompt({
     script: segments,
     voice: body.voice || {},
@@ -107,28 +107,45 @@ export async function postGenerate({
     microPan: body.microPan,
   });
 
-  // 1回リトライポリシー
-  try {
-    const opId = await generateOnce({
-      apiKey,
-      prompt,
-      negative,
-      imageBytes: parsed.bytes,
-      mimeType: 'image/png',
-    });
-    return { status: 200, headers: resHeaders, body: { ops: [opId], usedScript: segments } };
-  } catch {
+  // 1回リトライポリシー（8秒:1回、16秒:2回）
+  const attempt = async (): Promise<string[] | null> => {
     try {
-      const opId = await generateOnce({
+      if (lengthSec === 8) {
+        const op = await generateOnce({
+          apiKey,
+          prompt,
+          negative,
+          imageBytes: parsed.bytes,
+          mimeType: 'image/png',
+        });
+        return [op];
+      }
+      // 16秒（8秒×2）
+      const opA = await generateOnce({
         apiKey,
         prompt,
         negative,
         imageBytes: parsed.bytes,
         mimeType: 'image/png',
       });
-      return { status: 200, headers: resHeaders, body: { ops: [opId], usedScript: segments } };
+      const opB = await generateOnce({
+        apiKey,
+        prompt,
+        negative,
+        imageBytes: parsed.bytes,
+        mimeType: 'image/png',
+      });
+      return [opA, opB];
     } catch {
-      return { status: 500, headers: resHeaders, body: { error: 'generate_error' } };
+      return null;
     }
-  }
+  };
+
+  const first = await attempt();
+  if (first)
+    return { status: 200, headers: resHeaders, body: { ops: first, usedScript: segments } };
+  const second = await attempt();
+  if (second)
+    return { status: 200, headers: resHeaders, body: { ops: second, usedScript: segments } };
+  return { status: 500, headers: resHeaders, body: { error: 'generate_error' } };
 }
