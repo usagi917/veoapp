@@ -1,0 +1,56 @@
+# OS / Editor
+.DS_Store
+.idea/
+.history/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+# Node / Package managers
+node_modules/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+.claude/
+AGENTS.md
+prompt_plan.md
+todo.md
+spec.md
+
+# Build outputs
+dist/
+build/
+out/
+.cache/
+.parcel-cache/
+.turbo/
+
+# Vite / Vitest
+.vite/
+.vitest/
+coverage/
+.nyc_output/
+
+# TypeScript
+*.tsbuildinfo
+
+# Framework specific (harmless if unused)
+.next/
+.nuxt/
+.svelte-kit/
+storybook-static/
+
+# Misc
+.vercel/
+.netlify/
+.firebase/
