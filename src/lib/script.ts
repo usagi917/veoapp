@@ -56,9 +56,30 @@ function composeWithinLimit(sentences: string[], startIdx: number, maxChars: num
   }
 
   if (!acc) {
-    // 1文も入らない場合は、生文字からサブストリングして自然化
+    // 1文も入らない場合：その1文が長すぎる。
+    // まずは読点（、，,）の直前での自然な切断を試み、無ければサブストリング＋省略記号へ。
     const raw = sentences[startIdx] ?? '';
-    const slice = raw.slice(0, Math.max(0, maxChars)).trim();
+    const limit = Math.max(0, maxChars);
+    let cut = -1;
+    for (let p = Math.min(limit, raw.length) - 1; p >= 0; p--) {
+      const ch = raw[p];
+      if (ch === '、' || ch === '，' || ch === ',') {
+        cut = p; // 読点優先
+        break;
+      }
+    }
+
+    if (cut >= 0) {
+      const before = raw.slice(0, cut + 1).trim();
+      return {
+        // 読点は句点に自然化する（省略記号は付けない）
+        text: naturalizeEnding(before, false),
+        nextIndex: Math.min(startIdx + 1, sentences.length),
+      };
+    }
+
+    // 読点で切れないときはハードに切って省略記号
+    const slice = raw.slice(0, limit).trim();
     return {
       text: naturalizeEnding(slice, true),
       nextIndex: Math.min(startIdx + 1, sentences.length),

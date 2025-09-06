@@ -46,4 +46,25 @@ describe('fitScriptAndSplit', () => {
     const normal = fitScriptAndSplit(longText, 8, 'normal');
     expect(slow.segments[0].length).toBeLessThanOrEqual(normal.segments[0].length);
   });
+
+  it('長い1文でも読点(、)があればそこを優先して区切り、末尾は句点で自然化（省略記号なし）', () => {
+    const text =
+      '今日は少し長い説明をします、まず前提を確認してから、手順を順番に話します、必要なら途中で補足します';
+    // slowだと1セグメントの上限が小さく、確実にオーバーする
+    const { segments, cps } = fitScriptAndSplit(text, 8, 'slow');
+    const max = cps * 8;
+    expect(segments).toHaveLength(1);
+    expect(segments[0].length).toBeLessThanOrEqual(max);
+    // 省略記号ではなく句点で終わる（読点優先で自然化）
+    expect(segments[0].endsWith('。')).toBe(true);
+    expect(segments[0].includes('…')).toBe(false);
+  });
+
+  it('長い1文で読点が無い場合は、上限で切って省略記号(…)で示す', () => {
+    const text =
+      'これは超長い単一文ですそれでも区切りなく続きますこれでもまだ続けます最後まで切れ目なく延々と続けます';
+    const { segments } = fitScriptAndSplit(text, 8, 'slow');
+    expect(segments).toHaveLength(1);
+    expect(segments[0].endsWith('…')).toBe(true);
+  });
 });
