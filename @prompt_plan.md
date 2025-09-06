@@ -18,6 +18,7 @@
 - [x] 実装更新: src/lib/script.ts（energetic を fast 扱いに）
 - [x] /api/generate: 空scriptテスト追加 + 実装（400 invalid_input）
 - [x] UI: トーン説明のテスト追加 + 実装
+- [x] UI: トーン説明を aria-describedby で select に関連付け（アクセシビリティ）
 - [x] format/lint/typecheck/test 全て合格
 - [x] コミット作成
 - [x] plan/todo 更新

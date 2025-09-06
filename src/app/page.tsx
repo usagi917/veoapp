@@ -6,6 +6,7 @@ export default function Page() {
   const [lengthSec, setLengthSec] = useState<8 | 16>(8);
   const [scriptText, setScriptText] = useState('');
   const [consent, setConsent] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // アクセシビリティ用ID（label関連付け）
   const fileId = useId();
@@ -16,6 +17,21 @@ export default function Page() {
   const motionId = useId();
   const panId = useId();
   const consentId = useId();
+  const errorId = useId();
+
+  async function handleGenerateClick() {
+    setErrorMsg(null);
+    try {
+      const res = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) throw new Error('bad');
+    } catch {
+      setErrorMsg('エラー: 生成に失敗しました');
+    }
+  }
 
   return (
     <div>
@@ -111,7 +127,11 @@ export default function Page() {
             </div>
 
             <div>
-              <button type="button" disabled={scriptText.trim().length === 0 || !consent}>
+              <button
+                type="button"
+                disabled={scriptText.trim().length === 0 || !consent}
+                onClick={handleGenerateClick}
+              >
                 生成
               </button>
             </div>
@@ -120,6 +140,22 @@ export default function Page() {
 
         {/* 右パネル：進行表示と使用台本 */}
         <section aria-label="右パネル">
+          {errorMsg && (
+            <div
+              id={errorId}
+              role="alert"
+              aria-live="assertive"
+              style={{
+                border: '1px solid #f00',
+                background: '#fee',
+                color: '#900',
+                padding: 8,
+                marginBottom: 12,
+              }}
+            >
+              {errorMsg}
+            </div>
+          )}
           <div>
             <h2>進行</h2>
             <ol>
