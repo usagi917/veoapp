@@ -74,9 +74,8 @@ describe('POST /api/generate (8秒×1)', () => {
     const spy = client0?.models.generateVideos;
     expect(spy).toBeTruthy();
     // 1回のみ呼ばれる
-    // biome-ignore lint/style/noNonNullAssertion: spy is verified to exist above
-    expect(spy!.mock.calls.length).toBe(1);
-    const args = (spy!.mock.calls[0] as unknown[])[0] as {
+    expect(spy?.mock.calls.length).toBe(1);
+    const args = (spy?.mock.calls[0] as unknown[])[0] as {
       prompt: string;
       config?: { negativePrompt?: string; personGeneration?: string };
     };
@@ -215,7 +214,7 @@ describe('POST /api/generate (8秒×1)', () => {
       for (let i = 0; i < b64.length; i += 12) {
         chunks.push(b64.slice(i, i + 12));
       }
-      return 'base64,' + chunks.join(' \n ');
+      return `base64,${chunks.join(' \n ')}`;
     });
     const res = await postGenerate({
       headers,

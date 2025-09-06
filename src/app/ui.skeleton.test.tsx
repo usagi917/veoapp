@@ -51,4 +51,13 @@ describe('UIスケルトン（フォーム & 状態）', () => {
     render(<Page />);
     expect(screen.getByText(/energetic\s*=\s*元気\/ハキハキ/)).toBeInTheDocument();
   });
+
+  it('トーンselectは説明文と aria-describedby で関連付く', () => {
+    render(<Page />);
+    const toneSelect = screen.getByLabelText('トーン');
+    const desc = screen.getByText(/トーン説明:/);
+    const describedby = toneSelect.getAttribute('aria-describedby');
+    expect(describedby).toBeTruthy();
+    expect(desc.id).toBe(describedby);
+  });
 });

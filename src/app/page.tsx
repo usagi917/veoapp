@@ -12,6 +12,7 @@ export default function Page() {
   const scriptId = useId();
   const genderId = useId();
   const toneId = useId();
+  const toneHelpId = useId();
   const motionId = useId();
   const panId = useId();
   const consentId = useId();
@@ -51,12 +52,12 @@ export default function Page() {
 
             <div>
               <label htmlFor={toneId}>トーン</label>
-              <select id={toneId} name="tone" defaultValue="normal">
+              <select id={toneId} name="tone" defaultValue="normal" aria-describedby={toneHelpId}>
                 <option value="slow">slow</option>
                 <option value="normal">normal</option>
                 <option value="energetic">energetic</option>
               </select>
-              <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
+              <div id={toneHelpId} style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
                 トーン説明: slow=ゆっくり, normal=ふつう, energetic=元気/ハキハキ
               </div>
             </div>

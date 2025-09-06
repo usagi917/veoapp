@@ -1,4 +1,4 @@
-// biome-ignore assist/source/organizeImports: <explanation>
+// biome-ignore assist/source/organizeImports: test imports need specific order for mocking
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import process from 'node:process';
 import { issueCsrfToken, verifyCsrfToken } from './csrf';

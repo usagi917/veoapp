@@ -1,3 +1,4 @@
+// biome-ignore assist/source/organizeImports: test imports need specific order for mocking
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // kv と genai をモックする
