@@ -56,6 +56,9 @@ export default function Page() {
                 <option value="normal">normal</option>
                 <option value="energetic">energetic</option>
               </select>
+              <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
+                トーン説明: slow=ゆっくり, normal=ふつう, energetic=元気/ハキハキ
+              </div>
             </div>
 
             <div>

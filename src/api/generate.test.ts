@@ -1,4 +1,4 @@
-// biome-ignore assist/source/organizeImports: <explanation>
+// biome-ignore assist/source/organizeImports: test imports need specific order for mocking
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import process from 'node:process';
 
@@ -74,8 +74,8 @@ describe('POST /api/generate (8秒×1)', () => {
     const spy = client0?.models.generateVideos;
     expect(spy).toBeTruthy();
     // 1回のみ呼ばれる
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
-        expect(spy!.mock.calls.length).toBe(1);
+    // biome-ignore lint/style/noNonNullAssertion: spy is verified to exist above
+    expect(spy!.mock.calls.length).toBe(1);
     const args = (spy!.mock.calls[0] as unknown[])[0] as {
       prompt: string;
       config?: { negativePrompt?: string; personGeneration?: string };
@@ -181,6 +181,58 @@ describe('POST /api/generate (8秒×1)', () => {
     });
     expect(res.status).toBe(200);
     expect((res.body as unknown as { ops: string[] }).ops).toEqual(['op-2']);
+  });
+
+  it('MIMEタイプが大文字(IMAGE/PNG)でも受け付ける', async () => {
+    const sid = 's-upper';
+    const csrf = issueCsrfToken(sid);
+    const headers = new Headers({ Cookie: `sid=${sid}` });
+    const upper = pngDataUrl.replace('data:image/png', 'data:IMAGE/PNG');
+    const res = await postGenerate({
+      headers,
+      body: {
+        image: upper,
+        script: 'a',
+        voice: { tone: 'normal' },
+        motion: 'neutral',
+        microPan: false,
+        lengthSec: 8,
+        consent: true,
+        csrf,
+      },
+    });
+    expect(res.status).toBe(200);
+    const body = res.body as unknown as { ops: string[] };
+    expect(body.ops.length).toBe(1);
+  });
+
+  it('base64部に空白や改行を含んでも受け付ける', async () => {
+    const sid = 's-ws';
+    const csrf = issueCsrfToken(sid);
+    const headers = new Headers({ Cookie: `sid=${sid}` });
+    const withWs = pngDataUrl.replace(/base64,([A-Za-z0-9+/=]+)/, (_, b64: string) => {
+      const chunks: string[] = [];
+      for (let i = 0; i < b64.length; i += 12) {
+        chunks.push(b64.slice(i, i + 12));
+      }
+      return 'base64,' + chunks.join(' \n ');
+    });
+    const res = await postGenerate({
+      headers,
+      body: {
+        image: withWs,
+        script: 'a',
+        voice: { tone: 'normal' },
+        motion: 'neutral',
+        microPan: false,
+        lengthSec: 8,
+        consent: true,
+        csrf,
+      },
+    });
+    expect(res.status).toBe(200);
+    const body = res.body as unknown as { ops: string[] };
+    expect(body.ops.length).toBe(1);
   });
 });
 

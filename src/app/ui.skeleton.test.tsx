@@ -46,4 +46,9 @@ describe('UIスケルトン（フォーム & 状態）', () => {
     fireEvent.click(consent);
     expect(generateBtn).toBeEnabled();
   });
+
+  it('トーンの説明文（energetic=元気/ハキハキ）を表示する', () => {
+    render(<Page />);
+    expect(screen.getByText(/energetic\s*=\s*元気\/ハキハキ/)).toBeInTheDocument();
+  });
 });

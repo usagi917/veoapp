@@ -1,4 +1,7 @@
-目的: tone "energetic" を script 長さ見積もり(estimateCps)で fast 相当(8cps)として扱えるようにする。
+目的:
+
+1. tone "energetic" を script 長さ見積もり(estimateCps)で fast 相当(8cps)として扱う。
+2. /api/generate で script が空（trim後）なら 400 invalid_input を返す。
 
 やることの流れ:
 
@@ -13,6 +16,7 @@
 
 - [x] テスト追加: src/lib/script.cps.test.ts（estimateCps('energetic') => 8）
 - [x] 実装更新: src/lib/script.ts（energetic を fast 扱いに）
+- [x] /api/generate: 空scriptテスト追加 + 実装（400 invalid_input）
 - [x] format/lint/typecheck/test 全て合格
 - [x] コミット作成
 - [x] plan/todo 更新
