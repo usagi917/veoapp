@@ -15,16 +15,16 @@ export default [
         document: 'readonly',
         window: 'readonly',
         console: 'readonly',
-        URL: 'readonly'
-      }
+        URL: 'readonly',
+      },
     },
     plugins: {
-      '@typescript-eslint': tseslint
+      '@typescript-eslint': tseslint,
     },
     rules: {
       ...js.configs.recommended.rules,
-      ...tseslint.configs.recommended.rules
-    }
+      ...tseslint.configs.recommended.rules,
+    },
   },
   {
     files: ['**/*.test.ts', '**/*.test.tsx'],
@@ -35,8 +35,8 @@ export default [
         test: 'readonly',
         expect: 'readonly',
         beforeEach: 'readonly',
-        afterEach: 'readonly'
-      }
-    }
-  }
+        afterEach: 'readonly',
+      },
+    },
+  },
 ];
