@@ -233,6 +233,28 @@ describe('POST /api/generate (8秒×1)', () => {
     const body = res.body as unknown as { ops: string[] };
     expect(body.ops.length).toBe(1);
   });
+
+  it('余計なプロパティが含まれている場合は400（strict）', async () => {
+    const sid = 's-strict';
+    const csrf = issueCsrfToken(sid);
+    const headers = new Headers({ Cookie: `sid=${sid}` });
+    const res = await postGenerate({
+      headers,
+      body: {
+        image: pngDataUrl,
+        script: 'セリフ',
+        voice: { tone: 'normal' },
+        motion: 'neutral',
+        microPan: false,
+        lengthSec: 8,
+        consent: true,
+        csrf,
+        unexpected: 123,
+      } as unknown as Parameters<typeof postGenerate>[0]['body'],
+    });
+    expect(res.status).toBe(400);
+    expect(asErr(res.body).error).toMatch(/invalid_input/);
+  });
 });
 
 describe('POST /api/generate (16秒×2)', () => {

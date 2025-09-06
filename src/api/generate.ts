@@ -5,6 +5,7 @@ import { getKey } from '../lib/kv';
 import { makeClient } from '../lib/genai';
 import { fitScriptAndSplit } from '../lib/script';
 import { buildPrompt } from '../lib/prompt';
+import { z } from 'zod';
 
 export type PostGenerateInput = {
   headers: Headers;
@@ -87,20 +88,35 @@ export async function postGenerate({
   const apiKey = await getKey(sid);
   if (!apiKey) return { status: 401, headers: resHeaders, body: { error: 'unauthorized' } };
 
-  // 入力バリデーション（最小限）
-  const image = typeof body.image === 'string' ? body.image : '';
-  const script = typeof body.script === 'string' ? body.script.trim() : '';
-  const tone = body.voice?.tone || 'normal';
-  const lengthSec = body.lengthSec;
-  const consent = body.consent === true;
+  // 入力 zod（strict）
+  const Schema = z
+    .object({
+      image: z.string().min(1),
+      script: z.string().min(1),
+      voice: z
+        .object({
+          gender: z.string().optional(),
+          tone: z.string().optional(),
+        })
+        .optional(),
+      motion: z.string().optional(),
+      microPan: z.boolean().optional(),
+      lengthSec: z.union([z.literal(8), z.literal(16)]),
+      consent: z.literal(true),
+      csrf: z.string().min(1),
+    })
+    .strict();
 
-  if (!consent || (lengthSec !== 8 && lengthSec !== 16)) {
+  const parsedInput = Schema.safeParse(body);
+  if (!parsedInput.success) {
     return { status: 400, headers: resHeaders, body: { error: 'invalid_input' } };
   }
-  // 空scriptは受け付けない
-  if (!script) {
-    return { status: 400, headers: resHeaders, body: { error: 'invalid_input' } };
-  }
+  const input = parsedInput.data;
+  const image = input.image;
+  const script = input.script.trim();
+  const tone = input.voice?.tone || 'normal';
+  const lengthSec = input.lengthSec;
+
   const parsed = parsePngDataUrl(image);
   if (!parsed) return { status: 400, headers: resHeaders, body: { error: 'invalid_input' } };
 
