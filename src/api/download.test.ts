@@ -2,6 +2,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import process from 'node:process';
 
+vi.mock('../lib/dlblock', () => {
+  return {
+    isTokenBlocked: vi.fn(async () => false),
+  };
+});
+
 vi.mock('../lib/kv', () => {
   return {
     getKey: vi.fn(async () => 'APIKEY-1'),
@@ -19,6 +25,7 @@ vi.mock('../lib/genai', () => {
 });
 
 import { issueDownloadToken } from '../lib/download';
+import { isTokenBlocked } from '../lib/dlblock';
 import { getKey } from '../lib/kv';
 import { makeClient } from '../lib/genai';
 import { getDownload } from './download';
@@ -123,5 +130,20 @@ describe('GET /api/download?token=...', () => {
     const res = await getDownload({ headers, query: { token } });
     expect(res.status).toBe(500);
     expect(asErr(res.body).error).toMatch(/download_error/);
+  });
+
+  it('無効化されたトークンは403を返す', async () => {
+    const sid = 's-dl-block';
+    const pageId = 'p-1';
+    const handle = 'file-xyz';
+    const token = issueDownloadToken({ sid, pageId, handle, ttlSec: 120 });
+    // invalidate されていると仮定
+    (
+      isTokenBlocked as unknown as { mockResolvedValueOnce: (v: unknown) => void }
+    ).mockResolvedValueOnce(true);
+    const headers = new Headers({ Cookie: `sid=${sid}` });
+    const res = await getDownload({ headers, query: { token } });
+    expect(res.status).toBe(403);
+    expect(asErr(res.body).error).toMatch(/forbidden/);
   });
 });

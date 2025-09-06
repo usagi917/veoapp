@@ -2,6 +2,7 @@ import { getSid } from '../lib/cookies';
 import { getKey } from '../lib/kv';
 import { makeClient } from '../lib/genai';
 import { verifyDownloadToken } from '../lib/download';
+import { isTokenBlocked } from '../lib/dlblock';
 
 export type GetDownloadInput = {
   headers: Headers;
@@ -36,6 +37,18 @@ export async function getDownload({
   const token = typeof query.token === 'string' ? query.token.trim() : '';
   const ver = verifyDownloadToken(sid, token);
   if (!ver.ok) return { status: 403, headers: resHeaders, body: { error: 'forbidden' } };
+
+  // 失効済みチェック（beforeunload等で失効通知されたトークンは拒否）
+  try {
+    const parts = token.split('.');
+    const sig = parts.at(-1) || '';
+    if (!sig) return { status: 403, headers: resHeaders, body: { error: 'forbidden' } };
+    if (await isTokenBlocked(sig)) {
+      return { status: 403, headers: resHeaders, body: { error: 'forbidden' } };
+    }
+  } catch {
+    return { status: 403, headers: resHeaders, body: { error: 'forbidden' } };
+  }
 
   const apiKey = await getKey(sid);
   if (!apiKey) return { status: 401, headers: resHeaders, body: { error: 'unauthorized' } };
