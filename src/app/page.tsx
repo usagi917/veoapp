@@ -4,6 +4,8 @@ import React, { useId, useState } from 'react';
 export default function Page() {
   // 最小のローカル状態（まだ機能結線はしない）
   const [lengthSec, setLengthSec] = useState<8 | 16>(8);
+  const [scriptText, setScriptText] = useState('');
+  const [consent, setConsent] = useState(false);
 
   // アクセシビリティ用ID（label関連付け）
   const fileId = useId();
@@ -29,7 +31,13 @@ export default function Page() {
 
             <div>
               <label htmlFor={scriptId}>セリフ</label>
-              <textarea id={scriptId} name="script" rows={4} />
+              <textarea
+                id={scriptId}
+                name="script"
+                rows={4}
+                value={scriptText}
+                onChange={(e) => setScriptText(e.currentTarget.value)}
+              />
             </div>
 
             <div>
@@ -89,11 +97,19 @@ export default function Page() {
 
             <div>
               <label htmlFor={consentId}>権利同意</label>
-              <input id={consentId} name="consent" type="checkbox" />
+              <input
+                id={consentId}
+                name="consent"
+                type="checkbox"
+                checked={consent}
+                onChange={(e) => setConsent(e.currentTarget.checked)}
+              />
             </div>
 
             <div>
-              <button type="button">生成</button>
+              <button type="button" disabled={scriptText.trim().length === 0 || !consent}>
+                生成
+              </button>
             </div>
           </div>
         </section>

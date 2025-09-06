@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, within, fireEvent } from '@testing-library/react';
 import React from 'react';
 import Page from './page';
 
@@ -25,5 +25,25 @@ describe('UIスケルトン（フォーム & 状態）', () => {
     expect(within(right).getByText('生成')).toBeInTheDocument();
     expect(within(right).getByText('最終化')).toBeInTheDocument();
     expect(within(right).getByText('使用台本')).toBeInTheDocument();
+  });
+
+  it('必須選択のUI制御: セリフ未入力 or 同意未チェックでは生成ボタン不可、両方満たすと可', () => {
+    render(<Page />);
+
+    const generateBtn = screen.getByRole('button', { name: '生成' });
+    const script = screen.getByLabelText('セリフ');
+    const consent = screen.getByLabelText('権利同意');
+
+    // 初期は未入力＋未同意 → disabled
+    expect(generateBtn).toBeDisabled();
+
+    // セリフだけ入力 → まだdisabled
+    fireEvent.change(script, { target: { value: 'こんにちは' } });
+
+    expect(generateBtn).toBeDisabled();
+
+    // 同意チェック → enabled
+    fireEvent.click(consent);
+    expect(generateBtn).toBeEnabled();
   });
 });
