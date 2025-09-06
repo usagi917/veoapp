@@ -8,6 +8,12 @@ export default function Page() {
   const [consent, setConsent] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  // APIキー（BYOK）モーダル用の簡易状態
+  const [showKeyModal, setShowKeyModal] = useState(false);
+  const [apiKeyInput, setApiKeyInput] = useState('');
+  const [keySaveMsg, setKeySaveMsg] = useState<string | null>(null);
+  const [keySaveError, setKeySaveError] = useState<string | null>(null);
+
   // アクセシビリティ用ID（label関連付け）
   const fileId = useId();
   const scriptId = useId();
@@ -18,6 +24,7 @@ export default function Page() {
   const panId = useId();
   const consentId = useId();
   const errorId = useId();
+  const keyInputId = useId();
 
   async function handleGenerateClick() {
     setErrorMsg(null);
@@ -33,9 +40,37 @@ export default function Page() {
     }
   }
 
+  async function handleSaveApiKey() {
+    setKeySaveMsg(null);
+    setKeySaveError(null);
+    try {
+      // MVP: CSRFはサーバ側で検証される前提。ここではプレースホルダを送る。
+      const csrf = 'test.csrf';
+      const res = await fetch('/api/key', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey: apiKeyInput.trim(), csrf }),
+      });
+      if (!res.ok) {
+        setKeySaveError('APIキーの登録に失敗しました');
+        return;
+      }
+      setKeySaveMsg('APIキーを登録しました');
+    } catch {
+      setKeySaveError('APIキーの登録に失敗しました');
+    }
+  }
+
   return (
     <div>
       <h1>Pictalk</h1>
+
+      {/* ヘッダ右上: APIキー登録モーダル起動 */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+        <button type="button" onClick={() => setShowKeyModal(true)}>
+          APIキー
+        </button>
+      </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
         {/* 左パネル：フォーム群 */}
@@ -170,6 +205,49 @@ export default function Page() {
           </div>
         </section>
       </div>
+
+      {/* APIキー登録モーダル（最小実装） */}
+      {showKeyModal && (
+        <div
+          role="dialog"
+          aria-label="APIキー登録"
+          aria-modal="true"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}
+        >
+          <div style={{ background: '#fff', padding: 16, minWidth: 320, borderRadius: 8 }}>
+            <h2 style={{ marginTop: 0 }}>APIキーを登録</h2>
+            <div style={{ display: 'grid', gap: 12 }}>
+              <div>
+                <label htmlFor={keyInputId}>APIキー</label>
+                <input
+                  id={keyInputId}
+                  type="text"
+                  value={apiKeyInput}
+                  onChange={(e) => setApiKeyInput(e.currentTarget.value)}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                <button type="button" onClick={() => setShowKeyModal(false)}>
+                  閉じる
+                </button>
+                <button type="button" onClick={handleSaveApiKey}>
+                  保存
+                </button>
+              </div>
+              {keySaveMsg && <div>{keySaveMsg}</div>}
+              {keySaveError && <div style={{ color: '#900' }}>{keySaveError}</div>}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
