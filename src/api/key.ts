@@ -3,6 +3,7 @@ import { getSid, setSid } from '../lib/cookies';
 import { verifyCsrfToken } from '../lib/csrf';
 import { setKey } from '../lib/kv';
 import { makeClient } from '../lib/genai';
+import { z } from 'zod';
 
 export type PostKeyInput = {
   headers: Headers;
@@ -21,15 +22,21 @@ function genSid(): string {
 
 const TTL_SEC = 60 * 60;
 
+const BodySchema = z
+  .object({
+    apiKey: z.string().trim().min(1),
+    csrf: z.string().min(1),
+  })
+  .strict();
+
 export async function postKey({ headers, body }: PostKeyInput): Promise<PostKeyOutput> {
   const resHeaders = new Headers();
-  const apiKey = typeof body.apiKey === 'string' ? body.apiKey.trim() : '';
-  const csrf = typeof body.csrf === 'string' ? body.csrf : '';
-
-  // 入力チェック
-  if (!apiKey || !csrf) {
+  // 入力チェック（zodで厳密）
+  const parsed = BodySchema.safeParse(body as unknown);
+  if (!parsed.success) {
     return { status: 400, headers: resHeaders, body: { error: 'invalid_input' } };
   }
+  const { apiKey, csrf } = parsed.data;
 
   // sid取得 or 生成
   let sid = getSid(headers);

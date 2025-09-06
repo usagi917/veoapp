@@ -109,4 +109,18 @@ describe('POST /api/key', () => {
     expect(res.status).toBe(500);
     expect(asErrorBody(res.body).error).toMatch(/kv_error/);
   });
+
+  it('余計なプロパティを含む入力は400（zod厳密バリデ）', async () => {
+    const sid = 's-strict';
+    const headers = new Headers({ Cookie: `sid=${sid}` });
+    const csrf = issueCsrfToken(sid);
+    // 余計なプロパティ foo を含める
+    const body = { apiKey: 'G-xxxx', csrf, foo: 'bar' } as unknown as {
+      apiKey: string;
+      csrf: string;
+    };
+    const res = await postKey({ headers, body });
+    expect(res.status).toBe(400);
+    expect(asErrorBody(res.body).error).toMatch(/invalid_input/);
+  });
 });
