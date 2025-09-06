@@ -3,6 +3,12 @@
 
 export type GenAiClient = {
   ping: () => Promise<void>;
+  operations: {
+    getVideosOperation: (args: { operation: string }) => Promise<{
+      done?: boolean;
+      generatedVideos?: { video?: string }[];
+    }>;
+  };
 };
 
 export function makeClient(apiKey: string): GenAiClient {
@@ -11,6 +17,12 @@ export function makeClient(apiKey: string): GenAiClient {
   return {
     async ping() {
       return;
+    },
+    operations: {
+      async getVideosOperation() {
+        // 実装はSDKに委譲予定（ここではテスト時にモックされる）
+        return { done: false };
+      },
     },
   };
 }
