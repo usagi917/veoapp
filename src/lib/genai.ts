@@ -9,6 +9,9 @@ export type GenAiClient = {
       generatedVideos?: { video?: string }[];
     }>;
   };
+  files?: {
+    download: (args: { file: string }) => Promise<Uint8Array>;
+  };
 };
 
 export function makeClient(apiKey: string): GenAiClient {
