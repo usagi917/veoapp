@@ -36,7 +36,7 @@ function parseCookieHeader(header: string | null | undefined): Record<string, st
 }
 
 export function getSid(headers: Headers): string | undefined {
-  const cookie = headers.get('Cookie');
+  const cookie = headers.get('Cookie') ?? headers.get('cookie');
   const map = parseCookieHeader(cookie);
   return map[SID_COOKIE];
 }
