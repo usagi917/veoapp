@@ -7,7 +7,7 @@
 export function estimateCps(tone?: string): number {
   const t = (tone || 'normal').toLowerCase();
   if (/(slow|ゆっくり|遅)/.test(t)) return 4;
-  if (/(fast|早口|速)/.test(t)) return 8;
+  if (/(fast|energetic|元気|ハキハキ|速|早口)/.test(t)) return 8;
   return 6;
 }
 
