@@ -1,4 +1,4 @@
-// biome-ignore assist/source/organizeImports: vi.mock の初期化順序を守るため、このファイルの import 並び替えを無効化
+// biome-ignore assist/source/organizeImports: <explanation>
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import process from 'node:process';
 

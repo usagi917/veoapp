@@ -27,9 +27,10 @@ export type PostGenerateOutput = {
 };
 
 function parsePngDataUrl(dataUrl: string): { mimeType: 'image/png'; bytes: Uint8Array } | null {
-  const m = /^data:(image\/png);base64,([A-Za-z0-9+/=]+)$/.exec(dataUrl || '');
+  // 大文字小文字を無視し、base64部の空白/改行を許容する
+  const m = /^data:(image\/png);base64,([\sA-Za-z0-9+/=]+)$/i.exec(dataUrl || '');
   if (!m) return null;
-  const b64 = m[2];
+  const b64 = m[2].replace(/\s+/g, '');
   const buf = Buffer.from(b64, 'base64');
   return { mimeType: 'image/png', bytes: new Uint8Array(buf) };
 }
@@ -96,10 +97,14 @@ export async function postGenerate({
   if (!consent || (lengthSec !== 8 && lengthSec !== 16)) {
     return { status: 400, headers: resHeaders, body: { error: 'invalid_input' } };
   }
+  // 空scriptは受け付けない
+  if (!script) {
+    return { status: 400, headers: resHeaders, body: { error: 'invalid_input' } };
+  }
   const parsed = parsePngDataUrl(image);
   if (!parsed) return { status: 400, headers: resHeaders, body: { error: 'invalid_input' } };
 
-  const { segments } = fitScriptAndSplit(script, (lengthSec as 8 | 16) ?? 8, tone);
+  const { segments } = fitScriptAndSplit(script, lengthSec as 8 | 16, tone);
   const { prompt, negative } = buildPrompt({
     script: segments,
     voice: body.voice || {},

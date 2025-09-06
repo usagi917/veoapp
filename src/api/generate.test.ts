@@ -1,3 +1,4 @@
+// biome-ignore assist/source/organizeImports: <explanation>
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import process from 'node:process';
 
@@ -70,10 +71,12 @@ describe('POST /api/generate (8秒×1)', () => {
     };
     const client0 = mk.mock.results.at(-1)?.value; // 直近のクライアント
     expect(client0).toBeTruthy();
-    const spy = client0!.models.generateVideos;
+    const spy = client0?.models.generateVideos;
+    expect(spy).toBeTruthy();
     // 1回のみ呼ばれる
-    expect(spy.mock.calls.length).toBe(1);
-    const args = (spy.mock.calls[0] as unknown[])[0] as {
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+        expect(spy!.mock.calls.length).toBe(1);
+    const args = (spy!.mock.calls[0] as unknown[])[0] as {
       prompt: string;
       config?: { negativePrompt?: string; personGeneration?: string };
     };
