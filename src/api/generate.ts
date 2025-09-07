@@ -6,6 +6,7 @@ import { makeClient } from '../lib/genai';
 import { fitScriptAndSplit } from '../lib/script';
 import { buildPrompt } from '../lib/prompt';
 import { z } from 'zod';
+import { applyCsp } from '../lib/csp';
 
 export type PostGenerateInput = {
   headers: Headers;
@@ -77,6 +78,7 @@ export async function postGenerate({
   body,
 }: PostGenerateInput): Promise<PostGenerateOutput> {
   const resHeaders = new Headers();
+  applyCsp(resHeaders);
 
   const sid = getSid(headers);
   if (!sid) return { status: 401, headers: resHeaders, body: { error: 'unauthorized' } };

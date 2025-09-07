@@ -3,6 +3,7 @@ import { getKey } from '../lib/kv';
 import { makeClient } from '../lib/genai';
 import { verifyDownloadToken } from '../lib/download';
 import { isTokenBlocked } from '../lib/dlblock';
+import { applyCsp } from '../lib/csp';
 
 export type GetDownloadInput = {
   headers: Headers;
@@ -31,6 +32,7 @@ export async function getDownload({
   query,
 }: GetDownloadInput): Promise<GetDownloadOutput> {
   const resHeaders = new Headers();
+  applyCsp(resHeaders);
   const sid = getSid(headers);
   if (!sid) return { status: 401, headers: resHeaders, body: { error: 'unauthorized' } };
 

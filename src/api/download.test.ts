@@ -62,6 +62,10 @@ describe('GET /api/download?token=...', () => {
     expect(res.body instanceof Uint8Array).toBe(true);
     expect((res.body as Uint8Array).length).toBe(3);
 
+    // CSPヘッダが付与される
+    const csp = res.headers.get('Content-Security-Policy') || '';
+    expect(csp).toContain("media-src 'self' blob:");
+
     // makeClient の呼び出しを確認
     const mk = makeClient as unknown as {
       mock: { results: { value: { files: { download: { mock: { calls: unknown[][] } } } } }[] };

@@ -57,6 +57,10 @@ describe('POST /api/download/invalidate', () => {
     expect(inv.status).toBe(200);
     expect('ok' in inv.body && inv.body.ok).toBe(true);
 
+    // CSPヘッダが付与される
+    const csp = inv.headers.get('Content-Security-Policy') || '';
+    expect(csp).toContain("default-src 'self'");
+
     const res2 = await getDownload({ headers, query: { token } });
     expect(res2.status).toBe(403);
     expect(asErr(res2.body).error).toMatch(/forbidden/);

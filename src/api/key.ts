@@ -4,6 +4,7 @@ import { verifyCsrfToken } from '../lib/csrf';
 import { setKey } from '../lib/kv';
 import { makeClient } from '../lib/genai';
 import { z } from 'zod';
+import { applyCsp } from '../lib/csp';
 
 export type PostKeyInput = {
   headers: Headers;
@@ -31,6 +32,7 @@ const BodySchema = z
 
 export async function postKey({ headers, body }: PostKeyInput): Promise<PostKeyOutput> {
   const resHeaders = new Headers();
+  applyCsp(resHeaders);
   // 入力チェック（zodで厳密）
   const parsed = BodySchema.safeParse(body as unknown);
   if (!parsed.success) {

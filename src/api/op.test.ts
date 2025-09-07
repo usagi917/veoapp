@@ -38,6 +38,10 @@ describe('GET /api/op?id=...', () => {
     const res = await getOp({ headers, query: { id: 'op-123' } });
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ done: false });
+
+    // CSPヘッダが付与される
+    const csp = res.headers.get('Content-Security-Policy') || '';
+    expect(csp).toContain("connect-src 'self' https://*.googleapis.com");
   });
 
   it('done:true かつ videoハンドルがあるとき、handleを返す', async () => {

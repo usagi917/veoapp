@@ -2,6 +2,7 @@ import { getSid } from '../lib/cookies';
 import { verifyCsrfToken } from '../lib/csrf';
 import { setTokenBlocked } from '../lib/dlblock';
 import { verifyDownloadToken } from '../lib/download';
+import { applyCsp } from '../lib/csp';
 
 export type PostDownloadInvalidateInput = {
   headers: Headers;
@@ -23,6 +24,7 @@ export async function postDownloadInvalidate({
   body,
 }: PostDownloadInvalidateInput): Promise<PostDownloadInvalidateOutput> {
   const resHeaders = new Headers();
+  applyCsp(resHeaders);
   const sid = getSid(headers);
   if (!sid) return { status: 401, headers: resHeaders, body: { error: 'unauthorized' } };
 

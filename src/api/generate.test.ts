@@ -62,6 +62,11 @@ describe('POST /api/generate (8秒×1)', () => {
     expect(body.usedScript).toHaveLength(1);
     expect(body.usedScript[0]).toContain('こんにちは');
 
+    // CSPヘッダが付与される
+    const csp = res.headers.get('Content-Security-Policy') || '';
+    expect(csp).toContain("default-src 'self'");
+    expect(csp).toContain("img-src 'self' blob: data:");
+
     // 呼び出しパラメータを検証
     // makeClient が返したインスタンスから呼び出し履歴を参照
     const mk = makeClient as unknown as {

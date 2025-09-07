@@ -1,6 +1,7 @@
 import { getSid } from '../lib/cookies';
 import { getKey } from '../lib/kv';
 import { makeClient } from '../lib/genai';
+import { applyCsp } from '../lib/csp';
 
 export type GetOpInput = {
   headers: Headers;
@@ -15,6 +16,7 @@ export type GetOpOutput = {
 
 export async function getOp({ headers, query }: GetOpInput): Promise<GetOpOutput> {
   const resHeaders = new Headers();
+  applyCsp(resHeaders);
   const id = typeof query.id === 'string' ? query.id.trim() : '';
   if (!id) return { status: 400, headers: resHeaders, body: { error: 'invalid_input' } };
 

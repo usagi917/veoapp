@@ -41,6 +41,11 @@ describe('POST /api/key', () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true });
 
+    // CSPヘッダが付与される
+    const csp = res.headers.get('Content-Security-Policy') || '';
+    expect(csp).toContain("default-src 'self'");
+    expect(csp).toContain("connect-src 'self' https://*.googleapis.com");
+
     // KV保存が正しい引数で呼ばれる
     expect(setKey).toHaveBeenCalledWith(sid, 'G-xxxx', 60 * 60);
 
