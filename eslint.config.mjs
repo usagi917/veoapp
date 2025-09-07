@@ -23,6 +23,11 @@ export default [
         File: 'readonly',
         Blob: 'readonly',
         HTMLInputElement: 'readonly',
+        TextEncoder: 'readonly',
+        TextDecoder: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
+        RequestInfo: 'readonly',
       },
     },
     plugins: {
@@ -51,7 +56,14 @@ export default [
         expect: 'readonly',
         beforeEach: 'readonly',
         afterEach: 'readonly',
+        vi: 'readonly',
       },
+    },
+  },
+  {
+    files: ['src/app/**/*.tsx', 'src/app/**/*.ts'],
+    rules: {
+      'react-hooks/exhaustive-deps': 'off',
     },
   },
 ];

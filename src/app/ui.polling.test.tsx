@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { act } from 'react-dom/test-utils';
+import { act } from 'react';
 import React from 'react';
 import { vi } from 'vitest';
 import Page from './page';
@@ -28,7 +28,11 @@ describe('ポーリング（10秒間隔、即時1回 + 間隔）', () => {
       if (url.startsWith('/api/op')) {
         opCalls += 1;
         if (opCalls === 1) {
-          return { ok: true, status: 200, json: async () => ({ done: false }) } as unknown as Response;
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({ done: false }),
+          } as unknown as Response;
         }
         return {
           ok: true,
@@ -50,7 +54,9 @@ describe('ポーリング（10秒間隔、即時1回 + 間隔）', () => {
       await vi.advanceTimersByTimeAsync(10_000);
     });
     // fetch呼び出しに /api/op が含まれる（1回以上）
-    const calls1 = (globalThis.fetch as any).mock.calls.map((c: any[]) => String(c[0]));
+    const calls1 = (globalThis.fetch as unknown as { mock: { calls: unknown[][] } }).mock.calls.map(
+      (c) => String(c[0]),
+    );
     expect(calls1.filter((u: string) => u.startsWith('/api/op')).length).toBeGreaterThanOrEqual(1);
 
     // さらに10秒で2回目（done:true）

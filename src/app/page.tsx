@@ -19,7 +19,7 @@ export default function Page() {
   const [usedScript, setUsedScript] = useState<string[] | null>(null);
   const [ops, setOps] = useState<string[] | null>(null);
   const [isComplete, setIsComplete] = useState(false);
-  const [opHandles, setOpHandles] = useState<string[] | null>(null);
+  const [_opHandles, setOpHandles] = useState<string[] | null>(null);
 
   // アクセシビリティ用ID（label関連付け）
   const fileId = useId();
@@ -63,9 +63,10 @@ export default function Page() {
           }),
         });
         if (!res.ok) throw new Error('bad');
-        const data = (await res
-          .json()
-          .catch(() => ({}))) as { usedScript?: string[]; ops?: string[] };
+        const data = (await res.json().catch(() => ({}))) as {
+          usedScript?: string[];
+          ops?: string[];
+        };
         if (data && Array.isArray(data.usedScript)) {
           setUsedScript(data.usedScript);
         }
@@ -103,22 +104,22 @@ export default function Page() {
     const handles: string[] = [];
 
     async function pollOnce() {
-      for (const id of ops) {
+      for (const id of ops ?? []) {
         if (doneSet.has(id)) continue;
         try {
           const res = await fetch(`/api/op?id=${encodeURIComponent(id)}`);
           if (!res.ok) continue;
-          const body = (await res.json()) as { done: boolean } | { done: true; handle: string };
-          if ((body as any).done === true) {
+          const body = (await res.json()) as { done?: boolean; handle?: string };
+          if (body.done === true) {
             doneSet.add(id);
-            const h = (body as any).handle;
+            const h = body.handle;
             if (typeof h === 'string') handles.push(h);
           }
         } catch {
           // noop: 次回ポーリングで再試行
         }
       }
-      if (!cancelled && doneSet.size === ops.length) {
+      if (!cancelled && ops && doneSet.size === ops.length) {
         setOpHandles(handles);
         setIsComplete(true);
       }
@@ -135,7 +136,6 @@ export default function Page() {
       cancelled = true;
       clearInterval(t);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ops]);
 
   async function handleSaveApiKey() {
