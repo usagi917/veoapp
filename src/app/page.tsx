@@ -10,6 +10,7 @@ export default function Page() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [allowManualRetry, setAllowManualRetry] = useState(false);
   const [processedImage, setProcessedImage] = useState<Blob | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // APIキー（BYOK）モーダル用の簡易状態
   const [showKeyModal, setShowKeyModal] = useState(false);
@@ -48,8 +49,10 @@ export default function Page() {
   }
 
   async function handleGenerateClick() {
+    if (isGenerating) return; // 二重送信防止
     setErrorMsg(null);
     setAllowManualRetry(false);
+    setIsGenerating(true);
 
     async function tryOnce() {
       try {
@@ -89,10 +92,12 @@ export default function Page() {
     if (!ok) {
       setErrorMsg('エラー: 生成に失敗しました');
       setAllowManualRetry(true);
+      setIsGenerating(false);
     } else {
       setErrorMsg(null);
       setAllowManualRetry(false);
       setIsComplete(false);
+      setIsGenerating(false);
     }
   }
 
@@ -268,10 +273,11 @@ export default function Page() {
             <div>
               <button
                 type="button"
-                disabled={scriptText.trim().length === 0 || !consent}
+                aria-busy={isGenerating || undefined}
+                disabled={isGenerating || scriptText.trim().length === 0 || !consent}
                 onClick={handleGenerateClick}
               >
-                生成
+                {isGenerating ? '生成中…' : '生成'}
               </button>
             </div>
           </div>
