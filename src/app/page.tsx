@@ -201,6 +201,11 @@ export default function Page() {
                 value={scriptText}
                 onChange={(e) => setScriptText(e.currentTarget.value)}
               />
+              {scriptText.trim().length === 0 && (
+                <div style={{ fontSize: 12, color: '#900', marginTop: 4 }}>
+                  セリフを入力してください。
+                </div>
+              )}
             </div>
 
             <div>
@@ -270,6 +275,11 @@ export default function Page() {
                 checked={consent}
                 onChange={(e) => setConsent(e.currentTarget.checked)}
               />
+              {!consent && (
+                <div style={{ fontSize: 12, color: '#900', marginTop: 4 }}>
+                  権利同意が必要です。
+                </div>
+              )}
             </div>
 
             <div>
