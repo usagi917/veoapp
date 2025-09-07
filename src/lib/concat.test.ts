@@ -75,7 +75,7 @@ describe('ffmpeg concat demuxer（-c copy → 失敗時 filter concat）', () =>
     expect(out.bytes).toEqual(new Uint8Array([1, 2, 3]));
   });
 
-  it('copyが失敗した場合は filter concat にフォールバックする', async () => {
+  it('copyが失敗した場合は filter concat にフォールバックし、24fpsを明示する', async () => {
     const calls: string[][] = [];
     let first = true;
     ffmpeg = {
@@ -115,7 +115,7 @@ describe('ffmpeg concat demuxer（-c copy → 失敗時 filter concat）', () =>
       'copy',
       'out.mp4',
     ]);
-    // 2回目は filter concat のコマンド
+    // 2回目は filter concat のコマンド（24fpsを維持するため -r 24 を付与）
     expect(calls[1]).toEqual([
       '-i',
       'a.mp4',
@@ -123,6 +123,8 @@ describe('ffmpeg concat demuxer（-c copy → 失敗時 filter concat）', () =>
       'b.mp4',
       '-filter_complex',
       'concat=n=2:v=1:a=1',
+      '-r',
+      '24',
       'out.mp4',
     ]);
     expect(out.bytes).toEqual(new Uint8Array([9, 9]));

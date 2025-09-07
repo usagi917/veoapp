@@ -44,7 +44,8 @@ export async function concatMp4Copy(
     // 失敗時は filter concat（再エンコード）
     const args = inputs.flatMap((i) => ['-i', i.name]);
     const filter = `concat=n=${inputs.length}:v=1:a=1`;
-    await ffmpeg.run(...args, '-filter_complex', filter, outName);
+    // 再エンコード時も24fpsを維持
+    await ffmpeg.run(...args, '-filter_complex', filter, '-r', '24', outName);
   }
 
   const bytes = ffmpeg.FS('readFile', outName) as Uint8Array;

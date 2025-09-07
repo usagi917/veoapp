@@ -350,6 +350,9 @@ export default function Page(props: PageProps = {}) {
                 checked={consent}
                 onChange={(e) => setConsent(e.currentTarget.checked)}
               />
+              <div style={{ fontSize: 12, color: '#555', marginTop: 4 }}>
+                利用条件: 自分/権利保有のみ、未成年/有名人不可
+              </div>
               {!consent && (
                 <div style={{ fontSize: 12, color: '#900', marginTop: 4 }}>
                   権利同意が必要です。
