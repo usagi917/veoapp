@@ -2,7 +2,9 @@ import React, { useId, useState } from 'react';
 import { validateImageFile, stripExifToPng } from '../lib/image';
 
 // 最小UIスケルトン（フォーム & 進行表示）
-export default function Page() {
+export type PageProps = { __test_faces?: number };
+
+export default function Page(props: PageProps = {}) {
   // 最小のローカル状態（まだ機能結線はしない）
   const [lengthSec, setLengthSec] = useState<8 | 16>(8);
   const [scriptText, setScriptText] = useState('');
@@ -53,6 +55,19 @@ export default function Page() {
     setErrorMsg(null);
     setAllowManualRetry(false);
     setIsGenerating(true);
+
+    // 簡易な顔数チェック（将来の顔検出/選択UIと接続予定）
+    const faces = typeof props.__test_faces === 'number' ? props.__test_faces : undefined;
+    if (faces === 0) {
+      setErrorMsg('顔が検出できません。単一人物・正面の写真をご利用ください。');
+      setIsGenerating(false);
+      return;
+    }
+    if (faces !== undefined && faces > 1) {
+      setErrorMsg('顔を1つ選択してください。');
+      setIsGenerating(false);
+      return;
+    }
 
     let lastStatus: number | null = null;
     async function tryOnce() {
