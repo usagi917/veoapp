@@ -73,4 +73,15 @@ describe('DELETE /api/key（BYOK解除）', () => {
     expect(res.status).toBe(500);
     expect(asErr(res.body).error).toMatch(/kv_error/);
   });
+
+  it('CSPヘッダを付与する', async () => {
+    const sid = 'sid-del-csp';
+    const csrf = issueCsrfToken(sid);
+    const headers = new Headers({ Cookie: `sid=${sid}` });
+
+    const res = await deleteKey({ headers, body: { csrf } });
+    expect(res.status).toBe(200);
+    const csp = res.headers.get('Content-Security-Policy') || '';
+    expect(csp).toContain("default-src 'self'");
+  });
 });

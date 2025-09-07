@@ -23,6 +23,8 @@ export default function Page(props: PageProps = {}) {
   const [ops, setOps] = useState<string[] | null>(null);
   const [isComplete, setIsComplete] = useState(false);
   const [_opHandles, setOpHandles] = useState<string[] | null>(null);
+  const [downloadMsg, setDownloadMsg] = useState<string | null>(null);
+  const [activeTokens, setActiveTokens] = useState<string[]>([]);
 
   // アクセシビリティ用ID（label関連付け）
   const fileId = useId();
@@ -166,6 +168,53 @@ export default function Page(props: PageProps = {}) {
       clearInterval(t);
     };
   }, [ops]);
+
+  // beforeunload時にダウンロードトークンを失効
+  React.useEffect(() => {
+    if (activeTokens.length === 0) return;
+    const handler = () => {
+      const csrf = 'test.csrf';
+      for (const token of activeTokens) {
+        try {
+          void fetch('/api/download/invalidate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token, csrf }),
+            keepalive: true,
+          });
+        } catch {
+          // ignore
+        }
+      }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [activeTokens]);
+
+  async function handleDownloadClick() {
+    try {
+      setDownloadMsg(null);
+      const handles = _opHandles || [];
+      if (handles.length === 0) return;
+      // MVP: 最初の1本をダウンロード開始
+      const handle = handles[0];
+      const csrf = 'test.csrf';
+      const res1 = await fetch('/api/download/issue', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ handle, csrf }),
+      });
+      if (!res1.ok) throw new Error('issue_failed');
+      const body = (await res1.json()) as { token?: string };
+      const token = body.token || '';
+      if (!token) throw new Error('no_token');
+      await fetch(`/api/download?token=${encodeURIComponent(token)}`);
+      setActiveTokens((prev) => [...prev, token]);
+      setDownloadMsg('ダウンロードを開始しました');
+    } catch {
+      setDownloadMsg('ダウンロードに失敗しました');
+    }
+  }
 
   async function handleSaveApiKey() {
     setKeySaveMsg(null);
@@ -355,6 +404,14 @@ export default function Page(props: PageProps = {}) {
               <li>最終化</li>
             </ol>
             {isComplete && <div style={{ color: '#060' }}>生成完了</div>}
+            {isComplete && (_opHandles?.length || 0) > 0 && (
+              <div style={{ marginTop: 8 }}>
+                <button type="button" onClick={handleDownloadClick}>
+                  ダウンロード
+                </button>
+                {downloadMsg && <div style={{ marginTop: 4, fontSize: 12 }}>{downloadMsg}</div>}
+              </div>
+            )}
           </div>
           <div>
             <h2>使用台本</h2>

@@ -1,6 +1,7 @@
 import { getSid, clearSid } from '../lib/cookies';
 import { verifyCsrfToken } from '../lib/csrf';
 import { delKey } from '../lib/kv';
+import { applyCsp } from '../lib/csp';
 
 export type DeleteKeyInput = {
   headers: Headers;
@@ -22,6 +23,7 @@ export type DeleteKeyOutput = {
  */
 export async function deleteKey({ headers, body }: DeleteKeyInput): Promise<DeleteKeyOutput> {
   const resHeaders = new Headers();
+  applyCsp(resHeaders);
 
   const sid = getSid(headers);
   if (!sid) return { status: 401, headers: resHeaders, body: { error: 'unauthorized' } };
