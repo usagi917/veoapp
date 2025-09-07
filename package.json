@@ -8,6 +8,8 @@
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "test": "VITEST_MAX_THREADS=1 VITEST_MIN_THREADS=1 vitest run",
+    "dev": "vite",
+    "preview": "vite preview",
     "codex:ci": "pnpm format && pnpm lint && pnpm typecheck && pnpm test",
     "postcodex:ci": "node -e \"process.stdout.write('\\x07')\""
   },
