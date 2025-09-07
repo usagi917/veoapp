@@ -17,6 +17,9 @@ export default function Page() {
   const [keySaveMsg, setKeySaveMsg] = useState<string | null>(null);
   const [keySaveError, setKeySaveError] = useState<string | null>(null);
   const [usedScript, setUsedScript] = useState<string[] | null>(null);
+  const [ops, setOps] = useState<string[] | null>(null);
+  const [isComplete, setIsComplete] = useState(false);
+  const [opHandles, setOpHandles] = useState<string[] | null>(null);
 
   // アクセシビリティ用ID（label関連付け）
   const fileId = useId();
@@ -60,9 +63,14 @@ export default function Page() {
           }),
         });
         if (!res.ok) throw new Error('bad');
-        const data = (await res.json().catch(() => ({}))) as { usedScript?: string[] };
+        const data = (await res
+          .json()
+          .catch(() => ({}))) as { usedScript?: string[]; ops?: string[] };
         if (data && Array.isArray(data.usedScript)) {
           setUsedScript(data.usedScript);
+        }
+        if (data && Array.isArray(data.ops) && data.ops.length > 0) {
+          setOps(data.ops);
         }
         return true;
       } catch {
@@ -83,8 +91,52 @@ export default function Page() {
     } else {
       setErrorMsg(null);
       setAllowManualRetry(false);
+      setIsComplete(false);
     }
   }
+
+  // /api/op ポーリング（即時1回 + 10秒間隔）
+  React.useEffect(() => {
+    if (!ops || ops.length === 0) return;
+    let cancelled = false;
+    const doneSet = new Set<string>();
+    const handles: string[] = [];
+
+    async function pollOnce() {
+      for (const id of ops) {
+        if (doneSet.has(id)) continue;
+        try {
+          const res = await fetch(`/api/op?id=${encodeURIComponent(id)}`);
+          if (!res.ok) continue;
+          const body = (await res.json()) as { done: boolean } | { done: true; handle: string };
+          if ((body as any).done === true) {
+            doneSet.add(id);
+            const h = (body as any).handle;
+            if (typeof h === 'string') handles.push(h);
+          }
+        } catch {
+          // noop: 次回ポーリングで再試行
+        }
+      }
+      if (!cancelled && doneSet.size === ops.length) {
+        setOpHandles(handles);
+        setIsComplete(true);
+      }
+    }
+
+    // 即時1回
+    void pollOnce();
+    // 10秒間隔
+    const t = setInterval(() => {
+      if (cancelled || isComplete) return;
+      void pollOnce();
+    }, 10_000);
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ops]);
 
   async function handleSaveApiKey() {
     setKeySaveMsg(null);
@@ -260,6 +312,7 @@ export default function Page() {
               <li>生成</li>
               <li>最終化</li>
             </ol>
+            {isComplete && <div style={{ color: '#060' }}>生成完了</div>}
           </div>
           <div>
             <h2>使用台本</h2>
