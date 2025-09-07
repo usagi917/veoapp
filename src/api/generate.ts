@@ -7,6 +7,7 @@ import { fitScriptAndSplit } from '../lib/script';
 import { buildPrompt } from '../lib/prompt';
 import { z } from 'zod';
 import { applyCsp } from '../lib/csp';
+import { logEvent, sanitizeGenerateInput } from '../lib/log';
 
 export type PostGenerateInput = {
   headers: Headers;
@@ -79,6 +80,12 @@ export async function postGenerate({
 }: PostGenerateInput): Promise<PostGenerateOutput> {
   const resHeaders = new Headers();
   applyCsp(resHeaders);
+  // 最小・PIIレスのログ
+  try {
+    logEvent('generate_request', sanitizeGenerateInput(body));
+  } catch {
+    // ignore logging errors
+  }
 
   const sid = getSid(headers);
   if (!sid) return { status: 401, headers: resHeaders, body: { error: 'unauthorized' } };

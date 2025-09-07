@@ -9,8 +9,9 @@
     "typecheck": "tsc --noEmit",
     "test": "VITEST_MAX_THREADS=1 VITEST_MIN_THREADS=1 vitest run",
     "dev": "vite",
+    "build": "vite build",
     "preview": "vite preview",
-    "test:e2e": "playwright test",
+    "test:e2e": "pnpm run build && playwright test",
     "e2e:install": "npx playwright install --with-deps",
     "codex:ci": "pnpm format && pnpm lint && pnpm typecheck && pnpm test",
     "postcodex:ci": "node -e \"process.stdout.write('\\x07')\""
