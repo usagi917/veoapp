@@ -408,7 +408,11 @@ export default function Page(props: PageProps = {}) {
               <li>生成</li>
               <li>最終化</li>
             </ol>
-            {isComplete && <div style={{ color: '#060' }}>生成完了</div>}
+            {isComplete && (
+              <div role="status" aria-live="polite" aria-atomic="true" style={{ color: '#060' }}>
+                生成完了
+              </div>
+            )}
             {isComplete && (_opHandles?.length || 0) > 0 && (
               <div style={{ marginTop: 8 }}>
                 <button type="button" onClick={handleDownloadClick}>
