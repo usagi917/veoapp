@@ -114,6 +114,8 @@ export default function Page(props: PageProps = {}) {
       if (lastStatus === 401) {
         setShowKeyModal(true);
         setErrorMsg('APIキーが未登録です。右上の「APIキー」で登録してください。');
+      } else if (lastStatus === 429 || lastStatus === 503) {
+        setErrorMsg('現在混み合っています。数分後に再試行してください。');
       } else {
         setErrorMsg('エラー: 生成に失敗しました');
       }
