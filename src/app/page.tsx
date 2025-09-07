@@ -159,6 +159,8 @@ export default function Page() {
         return;
       }
       setKeySaveMsg('APIキーを登録しました');
+      // フロントにキー生値を保持しない（即座にクリア）
+      setApiKeyInput('');
     } catch {
       setKeySaveError('APIキーの登録に失敗しました');
     }
