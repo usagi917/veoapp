@@ -3,6 +3,7 @@ import { verifyCsrfToken } from '../lib/csrf';
 import { setTokenBlocked } from '../lib/dlblock';
 import { verifyDownloadToken } from '../lib/download';
 import { applyCsp } from '../lib/csp';
+import { z } from 'zod';
 
 export type PostDownloadInvalidateInput = {
   headers: Headers;
@@ -28,13 +29,17 @@ export async function postDownloadInvalidate({
   const sid = getSid(headers);
   if (!sid) return { status: 401, headers: resHeaders, body: { error: 'unauthorized' } };
 
-  const csrf = typeof body.csrf === 'string' ? body.csrf : '';
+  const BodySchema = z
+    .object({ token: z.string().trim().min(1), csrf: z.string().min(1) })
+    .strict();
+  const parsed = BodySchema.safeParse(body as unknown);
+  if (!parsed.success) {
+    return { status: 400, headers: resHeaders, body: { error: 'invalid_input' } };
+  }
+  const { token, csrf } = parsed.data;
   if (!verifyCsrfToken(sid, csrf)) {
     return { status: 400, headers: resHeaders, body: { error: 'invalid_csrf' } };
   }
-
-  const token = typeof body.token === 'string' ? body.token.trim() : '';
-  if (!token) return { status: 400, headers: resHeaders, body: { error: 'invalid_input' } };
 
   // トークン検証（署名/期限）
   const ver = verifyDownloadToken(sid, token);

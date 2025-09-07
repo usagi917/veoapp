@@ -79,4 +79,15 @@ describe('POST /api/download/invalidate', () => {
     const res3 = await postDownloadInvalidate({ headers, body: { token: '', csrf } });
     expect(res3.status).toBe(400);
   });
+
+  it('余計なプロパティを含む入力は400（zod厳密）', async () => {
+    const sid = 's-inv-3';
+    const csrf = issueCsrfToken(sid);
+    const headers = new Headers({ Cookie: `sid=${sid}` });
+    const res = await postDownloadInvalidate({
+      headers,
+      body: { token: 'tok', csrf, extra: 'x' } as unknown as { token: string; csrf: string },
+    });
+    expect(res.status).toBe(400);
+  });
 });
