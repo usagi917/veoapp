@@ -54,6 +54,7 @@ export default function Page() {
     setAllowManualRetry(false);
     setIsGenerating(true);
 
+    let lastStatus: number | null = null;
     async function tryOnce() {
       try {
         const res = await fetch('/api/generate', {
@@ -65,7 +66,10 @@ export default function Page() {
             consent,
           }),
         });
-        if (!res.ok) throw new Error('bad');
+        if (!res.ok) {
+          lastStatus = res.status;
+          return false;
+        }
         const data = (await res.json().catch(() => ({}))) as {
           usedScript?: string[];
           ops?: string[];
@@ -90,7 +94,12 @@ export default function Page() {
     }
 
     if (!ok) {
-      setErrorMsg('エラー: 生成に失敗しました');
+      if (lastStatus === 401) {
+        setShowKeyModal(true);
+        setErrorMsg('APIキーが未登録です。右上の「APIキー」で登録してください。');
+      } else {
+        setErrorMsg('エラー: 生成に失敗しました');
+      }
       setAllowManualRetry(true);
       setIsGenerating(false);
     } else {
