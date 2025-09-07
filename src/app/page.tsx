@@ -7,6 +7,7 @@ export default function Page() {
   const [scriptText, setScriptText] = useState('');
   const [consent, setConsent] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [allowManualRetry, setAllowManualRetry] = useState(false);
 
   // APIキー（BYOK）モーダル用の簡易状態
   const [showKeyModal, setShowKeyModal] = useState(false);
@@ -28,15 +29,32 @@ export default function Page() {
 
   async function handleGenerateClick() {
     setErrorMsg(null);
-    try {
-      const res = await fetch('/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
-      });
-      if (!res.ok) throw new Error('bad');
-    } catch {
+    setAllowManualRetry(false);
+
+    async function tryOnce() {
+      try {
+        const res = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        });
+        if (!res.ok) throw new Error('bad');
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
+    // 1回目の試行
+    let ok = await tryOnce();
+    // 失敗したら1回だけ自動再試行
+    if (!ok) {
+      ok = await tryOnce();
+    }
+
+    if (!ok) {
       setErrorMsg('エラー: 生成に失敗しました');
+      setAllowManualRetry(true);
     }
   }
 
@@ -189,6 +207,13 @@ export default function Page() {
               }}
             >
               {errorMsg}
+            </div>
+          )}
+          {allowManualRetry && (
+            <div style={{ marginBottom: 12 }}>
+              <button type="button" onClick={handleGenerateClick}>
+                同じ設定で再生成
+              </button>
             </div>
           )}
           <div>
