@@ -16,6 +16,7 @@ export default function Page() {
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [keySaveMsg, setKeySaveMsg] = useState<string | null>(null);
   const [keySaveError, setKeySaveError] = useState<string | null>(null);
+  const [usedScript, setUsedScript] = useState<string[] | null>(null);
 
   // アクセシビリティ用ID（label関連付け）
   const fileId = useId();
@@ -52,9 +53,17 @@ export default function Page() {
         const res = await fetch('/api/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({}),
+          body: JSON.stringify({
+            script: scriptText.trim(),
+            lengthSec,
+            consent,
+          }),
         });
         if (!res.ok) throw new Error('bad');
+        const data = (await res.json().catch(() => ({}))) as { usedScript?: string[] };
+        if (data && Array.isArray(data.usedScript)) {
+          setUsedScript(data.usedScript);
+        }
         return true;
       } catch {
         return false;
@@ -71,6 +80,9 @@ export default function Page() {
     if (!ok) {
       setErrorMsg('エラー: 生成に失敗しました');
       setAllowManualRetry(true);
+    } else {
+      setErrorMsg(null);
+      setAllowManualRetry(false);
     }
   }
 
@@ -251,7 +263,17 @@ export default function Page() {
           </div>
           <div>
             <h2>使用台本</h2>
-            <div style={{ fontSize: 12, color: '#666' }}>ここに使用した台本を表示します</div>
+            {usedScript && usedScript.length > 0 ? (
+              <div>
+                {usedScript.map((s, i) => (
+                  <p key={i} style={{ margin: '4px 0' }}>
+                    {s}
+                  </p>
+                ))}
+              </div>
+            ) : (
+              <div style={{ fontSize: 12, color: '#666' }}>ここに使用した台本を表示します</div>
+            )}
           </div>
         </section>
       </div>
