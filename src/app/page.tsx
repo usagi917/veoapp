@@ -1,4 +1,5 @@
 import React, { useId, useState } from 'react';
+import { validateImageFile, stripExifToPng } from '../lib/image';
 
 // 最小UIスケルトン（フォーム & 進行表示）
 export default function Page() {
@@ -8,6 +9,7 @@ export default function Page() {
   const [consent, setConsent] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [allowManualRetry, setAllowManualRetry] = useState(false);
+  const [processedImage, setProcessedImage] = useState<Blob | null>(null);
 
   // APIキー（BYOK）モーダル用の簡易状態
   const [showKeyModal, setShowKeyModal] = useState(false);
@@ -26,6 +28,20 @@ export default function Page() {
   const consentId = useId();
   const errorId = useId();
   const keyInputId = useId();
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setErrorMsg(null);
+    setProcessedImage(null);
+    const file = e.currentTarget.files?.[0] ?? null;
+    if (!file) return;
+    const v = await validateImageFile(file);
+    if (!v.ok) {
+      setErrorMsg(v.message);
+      return;
+    }
+    const png = await stripExifToPng(file);
+    setProcessedImage(png);
+  }
 
   async function handleGenerateClick() {
     setErrorMsg(null);
@@ -96,7 +112,13 @@ export default function Page() {
           <div style={{ display: 'grid', gap: 12 }}>
             <div>
               <label htmlFor={fileId}>画像アップロード</label>
-              <input id={fileId} name="image" type="file" accept="image/*" />
+              <input
+                id={fileId}
+                name="image"
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+              />
             </div>
 
             <div>
@@ -208,6 +230,9 @@ export default function Page() {
             >
               {errorMsg}
             </div>
+          )}
+          {processedImage && !errorMsg && (
+            <div style={{ marginBottom: 12, color: '#060' }}>画像を読み込みました</div>
           )}
           {allowManualRetry && (
             <div style={{ marginBottom: 12 }}>

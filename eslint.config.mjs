@@ -20,6 +20,9 @@ export default [
         Request: 'readonly',
         Response: 'readonly',
         fetch: 'readonly',
+        File: 'readonly',
+        Blob: 'readonly',
+        HTMLInputElement: 'readonly',
       },
     },
     plugins: {
@@ -28,6 +31,14 @@ export default [
     rules: {
       ...js.configs.recommended.rules,
       ...tseslint.configs.recommended.rules,
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          destructuredArrayIgnorePattern: '^_',
+        },
+      ],
     },
   },
   {
