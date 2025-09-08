@@ -13,4 +13,3 @@ describe('権利同意チェックの説明文（aria-describedby）', () => {
     expect(checkbox.getAttribute('aria-describedby')?.split(' ').includes(descId!)).toBe(true);
   });
 });
-

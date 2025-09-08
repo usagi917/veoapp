@@ -58,8 +58,7 @@ export function begin(label: 'generate' | 'download') {
       try {
         // 動的import（テスト容易性）
         import('./log').then((m) => {
-          const logEvent = (m as unknown as { logEvent: (t: string, p: unknown) => void })
-            .logEvent;
+          const logEvent = (m as unknown as { logEvent: (t: string, p: unknown) => void }).logEvent;
           logEvent?.('metrics', { label, ok, durMs: dur });
         });
       } catch {
@@ -68,4 +67,3 @@ export function begin(label: 'generate' | 'download') {
     },
   };
 }
-

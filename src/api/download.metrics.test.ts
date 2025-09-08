@@ -51,4 +51,3 @@ describe('metrics: download', () => {
     expect(snap.download.failure).toBe(0);
   });
 });
-
