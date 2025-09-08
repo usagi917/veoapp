@@ -540,7 +540,7 @@ function PageInner(props: PageProps = {}) {
                 <label htmlFor={keyInputId}>APIキー</label>
                 <input
                   id={keyInputId}
-                  type="text"
+                  type="password"
                   value={apiKeyInput}
                   onChange={(e) => setApiKeyInput(e.currentTarget.value)}
                 />
