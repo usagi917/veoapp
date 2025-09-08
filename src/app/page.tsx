@@ -541,6 +541,9 @@ function PageInner(props: PageProps = {}) {
                 <input
                   id={keyInputId}
                   type="password"
+                  autoComplete="off"
+                  autoCapitalize="off"
+                  spellCheck={false}
                   value={apiKeyInput}
                   onChange={(e) => setApiKeyInput(e.currentTarget.value)}
                 />
