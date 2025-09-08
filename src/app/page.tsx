@@ -544,6 +544,7 @@ function PageInner(props: PageProps = {}) {
                   autoComplete="off"
                   autoCapitalize="off"
                   spellCheck={false}
+                  autoFocus
                   value={apiKeyInput}
                   onChange={(e) => setApiKeyInput(e.currentTarget.value)}
                 />
