@@ -8,6 +8,7 @@ import { buildPrompt } from '../lib/prompt';
 import { z } from 'zod';
 import { applyCsp } from '../lib/csp';
 import { logEvent, sanitizeGenerateInput } from '../lib/log';
+import { begin as beginMetrics } from '../lib/metrics';
 
 export type PostGenerateInput = {
   headers: Headers;
@@ -80,6 +81,7 @@ export async function postGenerate({
 }: PostGenerateInput): Promise<PostGenerateOutput> {
   const resHeaders = new Headers();
   applyCsp(resHeaders);
+  const endMetrics = beginMetrics('generate').end;
   // 最小・PIIレスのログ
   try {
     logEvent('generate_request', sanitizeGenerateInput(body));
@@ -88,14 +90,22 @@ export async function postGenerate({
   }
 
   const sid = getSid(headers);
-  if (!sid) return { status: 401, headers: resHeaders, body: { error: 'unauthorized' } };
+  if (!sid) {
+    endMetrics(false);
+    return { status: 401, headers: resHeaders, body: { error: 'unauthorized' } };
+  }
 
   const csrf = typeof body.csrf === 'string' ? body.csrf : '';
-  if (!verifyCsrfToken(sid, csrf))
+  if (!verifyCsrfToken(sid, csrf)) {
+    endMetrics(false);
     return { status: 400, headers: resHeaders, body: { error: 'invalid_csrf' } };
+  }
 
   const apiKey = await getKey(sid);
-  if (!apiKey) return { status: 401, headers: resHeaders, body: { error: 'unauthorized' } };
+  if (!apiKey) {
+    endMetrics(false);
+    return { status: 401, headers: resHeaders, body: { error: 'unauthorized' } };
+  }
 
   // 入力 zod（strict）
   const Schema = z
@@ -118,6 +128,7 @@ export async function postGenerate({
 
   const parsedInput = Schema.safeParse(body);
   if (!parsedInput.success) {
+    endMetrics(false);
     return { status: 400, headers: resHeaders, body: { error: 'invalid_input' } };
   }
   const input = parsedInput.data;
@@ -127,7 +138,10 @@ export async function postGenerate({
   const lengthSec = input.lengthSec;
 
   const parsed = parsePngDataUrl(image);
-  if (!parsed) return { status: 400, headers: resHeaders, body: { error: 'invalid_input' } };
+  if (!parsed) {
+    endMetrics(false);
+    return { status: 400, headers: resHeaders, body: { error: 'invalid_input' } };
+  }
 
   const { segments } = fitScriptAndSplit(script, lengthSec as 8 | 16, tone);
   const { prompt, negative } = buildPrompt({
@@ -172,10 +186,15 @@ export async function postGenerate({
   };
 
   const first = await attempt();
-  if (first)
+  if (first) {
+    endMetrics(true);
     return { status: 200, headers: resHeaders, body: { ops: first, usedScript: segments } };
+  }
   const second = await attempt();
-  if (second)
+  if (second) {
+    endMetrics(true);
     return { status: 200, headers: resHeaders, body: { ops: second, usedScript: segments } };
+  }
+  endMetrics(false);
   return { status: 500, headers: resHeaders, body: { error: 'generate_error' } };
 }

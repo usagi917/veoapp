@@ -48,6 +48,7 @@ type LogType =
   | 'op_poll'
   | 'download_issue'
   | 'download'
+  | 'metrics'
   | 'error';
 
 // 文字列値を短縮（念のための安全網）

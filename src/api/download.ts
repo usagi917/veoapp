@@ -4,6 +4,7 @@ import { makeClient } from '../lib/genai';
 import { verifyDownloadToken } from '../lib/download';
 import { isTokenBlocked } from '../lib/dlblock';
 import { applyCsp } from '../lib/csp';
+import { begin as beginMetrics } from '../lib/metrics';
 
 export type GetDownloadInput = {
   headers: Headers;
@@ -33,27 +34,42 @@ export async function getDownload({
 }: GetDownloadInput): Promise<GetDownloadOutput> {
   const resHeaders = new Headers();
   applyCsp(resHeaders);
+  const endMetrics = beginMetrics('download').end;
   const sid = getSid(headers);
-  if (!sid) return { status: 401, headers: resHeaders, body: { error: 'unauthorized' } };
+  if (!sid) {
+    endMetrics(false);
+    return { status: 401, headers: resHeaders, body: { error: 'unauthorized' } };
+  }
 
   const token = typeof query.token === 'string' ? query.token.trim() : '';
   const ver = verifyDownloadToken(sid, token);
-  if (!ver.ok) return { status: 403, headers: resHeaders, body: { error: 'forbidden' } };
+  if (!ver.ok) {
+    endMetrics(false);
+    return { status: 403, headers: resHeaders, body: { error: 'forbidden' } };
+  }
 
   // 失効済みチェック（beforeunload等で失効通知されたトークンは拒否）
   try {
     const parts = token.split('.');
     const sig = parts.at(-1) || '';
-    if (!sig) return { status: 403, headers: resHeaders, body: { error: 'forbidden' } };
+    if (!sig) {
+      endMetrics(false);
+      return { status: 403, headers: resHeaders, body: { error: 'forbidden' } };
+    }
     if (await isTokenBlocked(sig)) {
+      endMetrics(false);
       return { status: 403, headers: resHeaders, body: { error: 'forbidden' } };
     }
   } catch {
+    endMetrics(false);
     return { status: 403, headers: resHeaders, body: { error: 'forbidden' } };
   }
 
   const apiKey = await getKey(sid);
-  if (!apiKey) return { status: 401, headers: resHeaders, body: { error: 'unauthorized' } };
+  if (!apiKey) {
+    endMetrics(false);
+    return { status: 401, headers: resHeaders, body: { error: 'unauthorized' } };
+  }
 
   try {
     const client = makeClient(apiKey) as unknown as {
@@ -64,8 +80,10 @@ export async function getDownload({
     resHeaders.set('Cache-Control', 'no-store');
     resHeaders.set('Content-Type', 'video/mp4');
     resHeaders.set('Content-Disposition', `attachment; filename="${formatFileName()}"`);
+    endMetrics(true);
     return { status: 200, headers: resHeaders, body: data };
   } catch {
+    endMetrics(false);
     return { status: 500, headers: resHeaders, body: { error: 'download_error' } };
   }
 }
