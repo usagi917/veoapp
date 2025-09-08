@@ -1,6 +1,8 @@
 import React, { useId, useRef, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useGenerateMutation, getOpOnce } from './queries';
+import { getFfmpeg } from '../lib/ffmpeg';
+import { concatMp4Copy } from '../lib/concat';
 import { computeSmartCropRect, pickPrimaryFaceIndex, type BBox } from '../lib/face';
 import { validateImageFile, stripExifToPng } from '../lib/image';
 import { useAppStore, type VoiceGender, type VoiceTone, type Motion } from './store';
@@ -233,25 +235,75 @@ function PageInner(props: PageProps = {}) {
       setDownloadErr(false);
       const handles = _opHandles || [];
       if (handles.length === 0) return;
-      // MVP: 最初の1本をダウンロード開始
-      const handle = handles[0];
       const csrf = 'test.csrf';
-      const res1 = await fetch('/api/download/issue', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ handle, csrf }),
-      });
-      if (!res1.ok) throw new Error('issue_failed');
-      const body = (await res1.json()) as { token?: string };
-      const token = body.token || '';
-      if (!token) throw new Error('no_token');
-      const res2 = await fetch(`/api/download?token=${encodeURIComponent(token)}`);
-      if (!res2 || !(res2 as unknown as { ok?: boolean }).ok) {
-        throw new Error('download_failed');
+
+      // 16秒（=8秒×2）では2本を取得して結合（ffmpeg.wasm）
+      if (lengthSec === 16 && handles.length >= 2) {
+        const targets = handles.slice(0, 2);
+        const tokens: string[] = [];
+        const parts: { name: string; data: Uint8Array }[] = [];
+
+        for (let i = 0; i < targets.length; i++) {
+          const h = targets[i];
+          const r1 = await fetch('/api/download/issue', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ handle: h, csrf }),
+          });
+          if (!r1.ok) throw new Error('issue_failed');
+          const b1 = (await r1.json()) as { token?: string };
+          const t = b1.token || '';
+          if (!t) throw new Error('no_token');
+          tokens.push(t);
+          const r2 = await fetch(`/api/download?token=${encodeURIComponent(t)}`);
+          if (!r2 || !(r2 as unknown as { ok?: boolean }).ok) throw new Error('download_failed');
+          const buf = new Uint8Array(await (r2 as Response).arrayBuffer());
+          parts.push({ name: `part${i + 1}.mp4`, data: buf });
+        }
+
+        const ff = await getFfmpeg();
+        const out = await concatMp4Copy(ff, parts, 'pictalk_16s.mp4');
+        try {
+          const ab = out.bytes.buffer.slice(
+            out.bytes.byteOffset,
+            out.bytes.byteOffset + out.bytes.byteLength,
+          ) as ArrayBuffer;
+          const url = URL.createObjectURL(new Blob([ab], { type: 'video/mp4' }));
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'pictalk_16s.mp4';
+          // 実ブラウザでのみ動作。JSDOMでは単に関数が呼ばれるだけ。
+          a.click();
+          window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
+        } catch {
+          // ダウンロード開始の失敗は無視（案内表示は行う）
+        }
+        setActiveTokens((prev) => [...prev, ...tokens]);
+        setDownloadMsg('ダウンロードを開始しました');
+        setDownloadErr(false);
+        return;
       }
-      setActiveTokens((prev) => [...prev, token]);
-      setDownloadMsg('ダウンロードを開始しました');
-      setDownloadErr(false);
+
+      // 8秒（単一）の場合は最初の1本のみ
+      {
+        const handle = handles[0];
+        const res1 = await fetch('/api/download/issue', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ handle, csrf }),
+        });
+        if (!res1.ok) throw new Error('issue_failed');
+        const body = (await res1.json()) as { token?: string };
+        const token = body.token || '';
+        if (!token) throw new Error('no_token');
+        const res2 = await fetch(`/api/download?token=${encodeURIComponent(token)}`);
+        if (!res2 || !(res2 as unknown as { ok?: boolean }).ok) {
+          throw new Error('download_failed');
+        }
+        setActiveTokens((prev) => [...prev, token]);
+        setDownloadMsg('ダウンロードを開始しました');
+        setDownloadErr(false);
+      }
     } catch {
       setDownloadMsg('ダウンロードに失敗しました');
       setDownloadErr(true);

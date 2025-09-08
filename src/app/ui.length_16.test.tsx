@@ -11,7 +11,6 @@ describe('長さ=16秒の挙動', () => {
 
   it('16秒を選ぶと POST ボディに lengthSec:16 が入る', async () => {
     const calls: Array<{ url: string; body?: unknown }> = [];
-    let opBCount = 0;
     globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: { body?: unknown }) => {
       const url = String(input);
       if (url.startsWith('/api/generate')) {
