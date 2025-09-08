@@ -31,6 +31,9 @@ export default function Page(props: PageProps = {}) {
   const [_opHandles, setOpHandles] = useState<string[] | null>(null);
   const [downloadMsg, setDownloadMsg] = useState<string | null>(null);
   const [activeTokens, setActiveTokens] = useState<string[]>([]);
+  const [voiceGender, setVoiceGender] = useState('female');
+  const [voiceTone, setVoiceTone] = useState('normal');
+  const [motion, setMotion] = useState('neutral');
 
   // アクセシビリティ用ID（label関連付け）
   const fileId = useId();
@@ -107,6 +110,8 @@ export default function Page(props: PageProps = {}) {
             lengthSec,
             consent,
             microPan: microPan || undefined,
+            voice: { gender: voiceGender, tone: voiceTone },
+            motion,
           }),
         });
         if (!res.ok) {
@@ -336,7 +341,12 @@ export default function Page(props: PageProps = {}) {
 
             <div>
               <label htmlFor={genderId}>性別</label>
-              <select id={genderId} name="gender" defaultValue="female">
+              <select
+                id={genderId}
+                name="gender"
+                value={voiceGender}
+                onChange={(e) => setVoiceGender(e.currentTarget.value)}
+              >
                 <option value="female">女性</option>
                 <option value="male">男性</option>
                 <option value="other">その他</option>
@@ -345,7 +355,13 @@ export default function Page(props: PageProps = {}) {
 
             <div>
               <label htmlFor={toneId}>トーン</label>
-              <select id={toneId} name="tone" defaultValue="normal" aria-describedby={toneHelpId}>
+              <select
+                id={toneId}
+                name="tone"
+                value={voiceTone}
+                onChange={(e) => setVoiceTone(e.currentTarget.value)}
+                aria-describedby={toneHelpId}
+              >
                 <option value="slow">slow</option>
                 <option value="normal">normal</option>
                 <option value="energetic">energetic</option>
@@ -357,7 +373,12 @@ export default function Page(props: PageProps = {}) {
 
             <div>
               <label htmlFor={motionId}>動き</label>
-              <select id={motionId} name="motion" defaultValue="neutral">
+              <select
+                id={motionId}
+                name="motion"
+                value={motion}
+                onChange={(e) => setMotion(e.currentTarget.value)}
+              >
                 <option value="neutral">自然で落ち着いた</option>
                 <option value="smile">笑顔</option>
               </select>
