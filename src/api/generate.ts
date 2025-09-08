@@ -195,6 +195,13 @@ export async function postGenerate({
     endMetrics(true);
     return { status: 200, headers: resHeaders, body: { ops: second, usedScript: segments } };
   }
+  try {
+    // 最小の例外記録
+    const { logApiError } = await import('../lib/log');
+    logApiError('generate', new Error('generate_error'));
+  } catch {
+    // ignore logging errors
+  }
   endMetrics(false);
   return { status: 500, headers: resHeaders, body: { error: 'generate_error' } };
 }

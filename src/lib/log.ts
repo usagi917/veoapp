@@ -80,3 +80,22 @@ export function logEvent(type: LogType, payload: unknown): string {
   }
   return line;
 }
+
+/**
+ * API層のエラーを最小情報で記録するヘルパ。
+ * PIIを避け、どのエンドポイント（where）で起きたかを残す。
+ */
+export function logApiError(where: string, err: unknown, extra?: unknown): string {
+  const safe: Record<string, unknown> = { where };
+  if (err && typeof err === 'object') {
+    const e = err as { name?: unknown; message?: unknown };
+    if (typeof e.name === 'string') safe.name = e.name;
+    if (typeof e.message === 'string') safe.message = e.message.slice(0, 200);
+  } else if (typeof err === 'string') {
+    safe.message = err.slice(0, 200);
+  }
+  if (extra && isRecord(extra)) {
+    safe.extra = truncateValues(extra);
+  }
+  return logEvent('error', safe);
+}
