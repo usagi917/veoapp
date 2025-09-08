@@ -83,5 +83,7 @@ describe('DELETE /api/key（BYOK解除）', () => {
     expect(res.status).toBe(200);
     const csp = res.headers.get('Content-Security-Policy') || '';
     expect(csp).toContain("default-src 'self'");
+    // キャッシュ無効化（no-store）
+    expect(res.headers.get('Cache-Control')).toBe('no-store');
   });
 });

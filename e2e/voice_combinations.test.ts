@@ -54,4 +54,3 @@ test('声の組合せ（男女×トーン3種）で /api/generate に期待のvo
   const expected = combos.map(([g, t]) => `${g}:${t}`).sort();
   expect(sent).toEqual(expected);
 });
-
