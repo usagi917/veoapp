@@ -582,7 +582,11 @@ function PageInner(props: PageProps = {}) {
                 <button type="button" onClick={closeKeyModal}>
                   閉じる
                 </button>
-                <button type="button" onClick={handleSaveApiKey}>
+                <button
+                  type="button"
+                  onClick={handleSaveApiKey}
+                  disabled={apiKeyInput.trim().length === 0}
+                >
                   保存
                 </button>
               </div>
