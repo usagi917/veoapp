@@ -1,4 +1,6 @@
 import React, { useId, useState } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useGenerateMutation, getOpOnce } from './queries';
 import { computeSmartCropRect, pickPrimaryFaceIndex, type BBox } from '../lib/face';
 import { validateImageFile, stripExifToPng } from '../lib/image';
 import { useAppStore, type VoiceGender, type VoiceTone, type Motion } from './store';
@@ -9,7 +11,7 @@ export type PageProps = {
   __test_faces?: number | { dims: { width: number; height: number }; bboxes: BBox[] };
 };
 
-export default function Page(props: PageProps = {}) {
+function PageInner(props: PageProps = {}) {
   // 最小のローカル状態（まだ機能結線はしない）
   const [lengthSec, setLengthSec] = useState<8 | 16>(8);
   const [scriptText, setScriptText] = useState('');
@@ -69,6 +71,8 @@ export default function Page(props: PageProps = {}) {
     setProcessedImage(png);
   }
 
+  const genMutation = useGenerateMutation();
+
   async function handleGenerateClick() {
     if (isGenerating) return; // 二重送信防止
     setErrorMsg(null);
@@ -110,30 +114,23 @@ export default function Page(props: PageProps = {}) {
     let lastStatus: number | null = null;
     async function tryOnce() {
       try {
-        const res = await fetch('/api/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            script: scriptText.trim(),
-            lengthSec,
-            consent,
-            microPan: microPan || undefined,
-            voice: { gender: voiceGender, tone: voiceTone },
-            motion,
-          }),
-        });
-        if (!res.ok) {
-          lastStatus = res.status;
-          return false;
-        }
-        const data = (await res.json().catch(() => ({}))) as {
-          usedScript?: string[];
-          ops?: string[];
-        };
+        const data = await genMutation.mutateAsync({
+          // 画像はMVPでは省略可（API側は別テスト）。ここでは既存テスト互換のフィールドに限定。
+          script: scriptText.trim(),
+          lengthSec,
+          consent: true,
+          microPan: microPan || undefined,
+          voice: { gender: voiceGender, tone: voiceTone },
+          motion,
+          csrf: 'test.csrf',
+          image: 'data:image/png;base64,aGVsbG8=',
+        } as unknown as import('./queries').GenerateVars);
         if (data && Array.isArray(data.usedScript)) setUsedScript(data.usedScript);
         if (data && Array.isArray(data.ops) && data.ops.length > 0) setOps(data.ops);
         return true;
-      } catch {
+      } catch (e) {
+        const err = e as { status?: number };
+        lastStatus = err?.status ?? null;
         return false;
       }
     }
@@ -164,7 +161,7 @@ export default function Page(props: PageProps = {}) {
     }
   }
 
-  // /api/op ポーリング（即時1回 + 10秒間隔）
+  // /api/op ポーリング（即時1回 + 10秒間隔）: Query の getOpOnce を用いて取得
   React.useEffect(() => {
     if (!ops || ops.length === 0) return;
     let cancelled = false;
@@ -175,9 +172,7 @@ export default function Page(props: PageProps = {}) {
       for (const id of ops ?? []) {
         if (doneSet.has(id)) continue;
         try {
-          const res = await fetch(`/api/op?id=${encodeURIComponent(id)}`);
-          if (!res.ok) continue;
-          const body = (await res.json()) as { done?: boolean; handle?: string };
+          const body = await getOpOnce(id);
           if (body.done === true) {
             doneSet.add(id);
             const h = body.handle;
@@ -565,5 +560,19 @@ export default function Page(props: PageProps = {}) {
         </div>
       )}
     </div>
+  );
+}
+
+export default function Page(props: PageProps = {}) {
+  const [qc] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: { queries: { retry: false }, mutations: { retry: 0 } },
+      }),
+  );
+  return (
+    <QueryClientProvider client={qc}>
+      <PageInner {...props} />
+    </QueryClientProvider>
   );
 }

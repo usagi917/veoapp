@@ -1,7 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { act } from 'react';
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // テスト対象（実装前は存在せずに失敗する想定）
@@ -118,7 +117,9 @@ describe('React Query フック', () => {
             >
               run401
             </button>
-            <div data-testid="err">{isError ? String(((error as { status?: number } | undefined)?.status) || 'err') : ''}</div>
+            <div data-testid="err">
+              {isError ? String((error as { status?: number } | undefined)?.status || 'err') : ''}
+            </div>
           </div>
         );
       }

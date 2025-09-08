@@ -28,12 +28,27 @@ export function useGenerateMutation() {
         err.status = res.status;
         throw err;
       }
-      return (await res.json()) as GenerateResult;
+      const r = res as unknown as { json?: () => Promise<unknown> };
+      const maybe = (typeof r.json === 'function' ? await r.json().catch(() => ({})) : {}) as
+        | Partial<GenerateResult>
+        | undefined;
+      return { ops: maybe?.ops ?? [], usedScript: maybe?.usedScript ?? [] } as GenerateResult;
     },
   });
 }
 
 export type OpResult = { done?: boolean; handle?: string };
+
+// 単発で /api/op を取得するユーティリティ（UIからの手動ポーリング用途）
+export async function getOpOnce(id: string): Promise<OpResult> {
+  const res = await fetch(`/api/op?id=${encodeURIComponent(String(id))}`);
+  if (!res.ok) {
+    const err = new Error('op_error') as Error & { status?: number };
+    err.status = res.status;
+    throw err;
+  }
+  return (await res.json()) as OpResult;
+}
 
 export function useOpQuery(id?: string) {
   return useQuery<OpResult>({
@@ -45,14 +60,6 @@ export function useOpQuery(id?: string) {
       return d?.done ? false : 10_000;
     },
     refetchIntervalInBackground: true,
-    queryFn: async () => {
-      const res = await fetch(`/api/op?id=${encodeURIComponent(String(id))}`);
-      if (!res.ok) {
-        const err = new Error('op_error') as Error & { status?: number };
-        err.status = res.status;
-        throw err;
-      }
-      return (await res.json()) as OpResult;
-    },
+    queryFn: async () => getOpOnce(String(id)),
   });
 }
