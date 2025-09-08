@@ -1,6 +1,8 @@
 import React, { useId, useState } from 'react';
 import { computeSmartCropRect, pickPrimaryFaceIndex, type BBox } from '../lib/face';
 import { validateImageFile, stripExifToPng } from '../lib/image';
+import { useAppStore, type VoiceGender, type VoiceTone, type Motion } from './store';
+// React Query は今後の結線予定
 
 // 最小UIスケルトン（フォーム & 進行表示）
 export type PageProps = {
@@ -18,7 +20,8 @@ export default function Page(props: PageProps = {}) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedFaceIndex, setSelectedFaceIndex] = useState<number | null>(null);
   const [cropRectLabel, setCropRectLabel] = useState<string | null>(null);
-  const [microPan, setMicroPan] = useState(false);
+  const microPan = useAppStore((s) => s.microPan);
+  const setMicroPan = useAppStore((s) => s.setMicroPan);
 
   // APIキー（BYOK）モーダル用の簡易状態
   const [showKeyModal, setShowKeyModal] = useState(false);
@@ -31,9 +34,12 @@ export default function Page(props: PageProps = {}) {
   const [_opHandles, setOpHandles] = useState<string[] | null>(null);
   const [downloadMsg, setDownloadMsg] = useState<string | null>(null);
   const [activeTokens, setActiveTokens] = useState<string[]>([]);
-  const [voiceGender, setVoiceGender] = useState('female');
-  const [voiceTone, setVoiceTone] = useState('normal');
-  const [motion, setMotion] = useState('neutral');
+  const voiceGender = useAppStore((s) => s.voiceGender);
+  const setVoiceGender = useAppStore((s) => s.setVoiceGender);
+  const voiceTone = useAppStore((s) => s.voiceTone);
+  const setVoiceTone = useAppStore((s) => s.setVoiceTone);
+  const motion = useAppStore((s) => s.motion);
+  const setMotion = useAppStore((s) => s.setMotion);
 
   // アクセシビリティ用ID（label関連付け）
   const fileId = useId();
@@ -46,6 +52,8 @@ export default function Page(props: PageProps = {}) {
   const consentId = useId();
   const errorId = useId();
   const keyInputId = useId();
+
+  // React Query: 将来の導入用のプレースホルダ。
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     setErrorMsg(null);
@@ -122,12 +130,8 @@ export default function Page(props: PageProps = {}) {
           usedScript?: string[];
           ops?: string[];
         };
-        if (data && Array.isArray(data.usedScript)) {
-          setUsedScript(data.usedScript);
-        }
-        if (data && Array.isArray(data.ops) && data.ops.length > 0) {
-          setOps(data.ops);
-        }
+        if (data && Array.isArray(data.usedScript)) setUsedScript(data.usedScript);
+        if (data && Array.isArray(data.ops) && data.ops.length > 0) setOps(data.ops);
         return true;
       } catch {
         return false;
@@ -345,7 +349,7 @@ export default function Page(props: PageProps = {}) {
                 id={genderId}
                 name="gender"
                 value={voiceGender}
-                onChange={(e) => setVoiceGender(e.currentTarget.value)}
+                onChange={(e) => setVoiceGender(e.currentTarget.value as VoiceGender)}
               >
                 <option value="female">女性</option>
                 <option value="male">男性</option>
@@ -359,7 +363,7 @@ export default function Page(props: PageProps = {}) {
                 id={toneId}
                 name="tone"
                 value={voiceTone}
-                onChange={(e) => setVoiceTone(e.currentTarget.value)}
+                onChange={(e) => setVoiceTone(e.currentTarget.value as VoiceTone)}
                 aria-describedby={toneHelpId}
               >
                 <option value="slow">slow</option>
@@ -377,7 +381,7 @@ export default function Page(props: PageProps = {}) {
                 id={motionId}
                 name="motion"
                 value={motion}
-                onChange={(e) => setMotion(e.currentTarget.value)}
+                onChange={(e) => setMotion(e.currentTarget.value as Motion)}
               >
                 <option value="neutral">自然で落ち着いた</option>
                 <option value="smile">笑顔</option>
