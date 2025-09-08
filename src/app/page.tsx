@@ -35,6 +35,7 @@ function PageInner(props: PageProps = {}) {
   const [isComplete, setIsComplete] = useState(false);
   const [_opHandles, setOpHandles] = useState<string[] | null>(null);
   const [downloadMsg, setDownloadMsg] = useState<string | null>(null);
+  const [downloadErr, setDownloadErr] = useState(false);
   const [activeTokens, setActiveTokens] = useState<string[]>([]);
   const voiceGender = useAppStore((s) => s.voiceGender);
   const setVoiceGender = useAppStore((s) => s.setVoiceGender);
@@ -229,6 +230,7 @@ function PageInner(props: PageProps = {}) {
   async function handleDownloadClick() {
     try {
       setDownloadMsg(null);
+      setDownloadErr(false);
       const handles = _opHandles || [];
       if (handles.length === 0) return;
       // MVP: 最初の1本をダウンロード開始
@@ -243,11 +245,16 @@ function PageInner(props: PageProps = {}) {
       const body = (await res1.json()) as { token?: string };
       const token = body.token || '';
       if (!token) throw new Error('no_token');
-      await fetch(`/api/download?token=${encodeURIComponent(token)}`);
+      const res2 = await fetch(`/api/download?token=${encodeURIComponent(token)}`);
+      if (!res2 || !(res2 as unknown as { ok?: boolean }).ok) {
+        throw new Error('download_failed');
+      }
       setActiveTokens((prev) => [...prev, token]);
       setDownloadMsg('ダウンロードを開始しました');
+      setDownloadErr(false);
     } catch {
       setDownloadMsg('ダウンロードに失敗しました');
+      setDownloadErr(true);
     }
   }
 
@@ -521,16 +528,25 @@ function PageInner(props: PageProps = {}) {
                 <button type="button" onClick={handleDownloadClick}>
                   ダウンロード
                 </button>
-                {downloadMsg && (
-                  <div
-                    role="status"
-                    aria-live="polite"
-                    aria-atomic="true"
-                    style={{ marginTop: 4, fontSize: 12 }}
-                  >
-                    {downloadMsg}
-                  </div>
-                )}
+                {downloadMsg &&
+                  (downloadErr ? (
+                    <div
+                      role="alert"
+                      aria-live="assertive"
+                      style={{ marginTop: 4, fontSize: 12, color: '#900' }}
+                    >
+                      {downloadMsg}
+                    </div>
+                  ) : (
+                    <div
+                      role="status"
+                      aria-live="polite"
+                      aria-atomic="true"
+                      style={{ marginTop: 4, fontSize: 12 }}
+                    >
+                      {downloadMsg}
+                    </div>
+                  ))}
               </div>
             )}
           </div>
