@@ -521,7 +521,16 @@ function PageInner(props: PageProps = {}) {
                 <button type="button" onClick={handleDownloadClick}>
                   ダウンロード
                 </button>
-                {downloadMsg && <div style={{ marginTop: 4, fontSize: 12 }}>{downloadMsg}</div>}
+                {downloadMsg && (
+                  <div
+                    role="status"
+                    aria-live="polite"
+                    aria-atomic="true"
+                    style={{ marginTop: 4, fontSize: 12 }}
+                  >
+                    {downloadMsg}
+                  </div>
+                )}
               </div>
             )}
           </div>
