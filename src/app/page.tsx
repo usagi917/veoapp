@@ -13,6 +13,7 @@ export default function Page(props: PageProps = {}) {
   const [allowManualRetry, setAllowManualRetry] = useState(false);
   const [processedImage, setProcessedImage] = useState<Blob | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [selectedFaceIndex, setSelectedFaceIndex] = useState<number | null>(null);
 
   // APIキー（BYOK）モーダル用の簡易状態
   const [showKeyModal, setShowKeyModal] = useState(false);
@@ -65,7 +66,7 @@ export default function Page(props: PageProps = {}) {
       setIsGenerating(false);
       return;
     }
-    if (faces !== undefined && faces > 1) {
+    if (faces !== undefined && faces > 1 && selectedFaceIndex == null) {
       setErrorMsg('顔を1つ選択してください。');
       setIsGenerating(false);
       return;
@@ -266,6 +267,31 @@ export default function Page(props: PageProps = {}) {
                 onChange={handleFileChange}
               />
             </div>
+
+            {/* 複数顔のときの簡易選択UI（テスト用ダミー） */}
+            {typeof props.__test_faces === 'number' && props.__test_faces > 1 && (
+              <fieldset>
+                <legend>顔の選択</legend>
+                {Array.from({ length: props.__test_faces }).map((_, i) => (
+                  <label
+                    key={i}
+                    style={{ display: 'inline-flex', alignItems: 'center', marginRight: 12 }}
+                  >
+                    <input
+                      type="radio"
+                      name="faceIndex"
+                      checked={selectedFaceIndex === i}
+                      onChange={() => {
+                        setSelectedFaceIndex(i);
+                        setErrorMsg(null);
+                      }}
+                    />
+                    {/* スクリーンリーダーに伝わる名称 */}
+                    <span style={{ marginLeft: 4 }}>{`顔 ${i + 1}`}</span>
+                  </label>
+                ))}
+              </fieldset>
+            )}
 
             <div>
               <label htmlFor={scriptId}>セリフ</label>
