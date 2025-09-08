@@ -272,6 +272,18 @@ function PageInner(props: PageProps = {}) {
     }
   }
 
+  // モーダルを閉じる共通処理（ボタン/ESC共有）
+  function closeKeyModal() {
+    setShowKeyModal(false);
+    setApiKeyInput('');
+    setKeySaveMsg(null);
+    setKeySaveError(null);
+    // トリガーボタンへフォーカスを戻す
+    Promise.resolve().then(() => {
+      focusTriggerRef.current?.();
+    });
+  }
+
   return (
     <div>
       <h1>Pictalk</h1>
@@ -530,6 +542,13 @@ function PageInner(props: PageProps = {}) {
           role="dialog"
           aria-label="APIキー登録"
           aria-modal="true"
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              e.stopPropagation();
+              e.preventDefault();
+              closeKeyModal();
+            }
+          }}
           style={{
             position: 'fixed',
             inset: 0,
@@ -557,20 +576,7 @@ function PageInner(props: PageProps = {}) {
                 />
               </div>
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    // 閉じる時にキー入力などモーダル内の一時状態をクリア
-                    setShowKeyModal(false);
-                    setApiKeyInput('');
-                    setKeySaveMsg(null);
-                    setKeySaveError(null);
-                    // トリガーボタンへフォーカスを戻す
-                    Promise.resolve().then(() => {
-                      focusTriggerRef.current?.();
-                    });
-                  }}
-                >
+                <button type="button" onClick={closeKeyModal}>
                   閉じる
                 </button>
                 <button type="button" onClick={handleSaveApiKey}>
