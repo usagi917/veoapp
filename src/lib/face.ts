@@ -101,7 +101,15 @@ export async function detectFaces(image: unknown): Promise<BBox[]> {
   const fromMock: Mock | null =
     typeof g.__mockFaceDetector === 'function' ? g.__mockFaceDetector! : null;
 
-  const raw: unknown = fromMock ? await fromMock(image) : ([] as BBox[]);
+  let raw: unknown = [] as BBox[];
+  if (fromMock) {
+    raw = await fromMock(image);
+  } else {
+    // モックがない場合は動的ローダーで検出器を読み込む（未導入なら空配列）
+    const { loadFaceDetector } = await import('./face_loader');
+    const detect = await loadFaceDetector();
+    raw = await detect(image);
+  }
   if (!Array.isArray(raw)) return [];
 
   const out: BBox[] = [];
