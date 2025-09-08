@@ -54,6 +54,7 @@ function PageInner(props: PageProps = {}) {
   const consentId = useId();
   const errorId = useId();
   const keyInputId = useId();
+  const keyModalHeadingId = useId();
   const focusTriggerRef = useRef<(() => void) | null>(null);
 
   // React Query: 将来の導入用のプレースホルダ。
@@ -540,7 +541,7 @@ function PageInner(props: PageProps = {}) {
       {showKeyModal && (
         <div
           role="dialog"
-          aria-label="APIキー登録"
+          aria-labelledby={keyModalHeadingId}
           aria-modal="true"
           onKeyDown={(e) => {
             if (e.key === 'Escape') {
@@ -560,7 +561,9 @@ function PageInner(props: PageProps = {}) {
           }}
         >
           <div style={{ background: '#fff', padding: 16, minWidth: 320, borderRadius: 8 }}>
-            <h2 style={{ marginTop: 0 }}>APIキーを登録</h2>
+            <h2 id={keyModalHeadingId} style={{ marginTop: 0 }}>
+              APIキー登録
+            </h2>
             <div style={{ display: 'grid', gap: 12 }}>
               <div>
                 <label htmlFor={keyInputId}>APIキー</label>
