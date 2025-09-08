@@ -1,4 +1,4 @@
-import React, { useId, useState } from 'react';
+import React, { useId, useRef, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useGenerateMutation, getOpOnce } from './queries';
 import { computeSmartCropRect, pickPrimaryFaceIndex, type BBox } from '../lib/face';
@@ -54,6 +54,7 @@ function PageInner(props: PageProps = {}) {
   const consentId = useId();
   const errorId = useId();
   const keyInputId = useId();
+  const focusTriggerRef = useRef<(() => void) | null>(null);
 
   // React Query: 将来の導入用のプレースホルダ。
 
@@ -277,7 +278,13 @@ function PageInner(props: PageProps = {}) {
 
       {/* ヘッダ右上: APIキー登録モーダル起動 */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
-        <button type="button" onClick={() => setShowKeyModal(true)}>
+        <button
+          type="button"
+          ref={(el) => {
+            focusTriggerRef.current = () => el?.focus();
+          }}
+          onClick={() => setShowKeyModal(true)}
+        >
           APIキー
         </button>
       </div>
@@ -558,6 +565,10 @@ function PageInner(props: PageProps = {}) {
                     setApiKeyInput('');
                     setKeySaveMsg(null);
                     setKeySaveError(null);
+                    // トリガーボタンへフォーカスを戻す
+                    Promise.resolve().then(() => {
+                      focusTriggerRef.current?.();
+                    });
                   }}
                 >
                   閉じる
