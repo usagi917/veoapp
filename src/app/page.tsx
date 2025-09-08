@@ -18,6 +18,7 @@ export default function Page(props: PageProps = {}) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedFaceIndex, setSelectedFaceIndex] = useState<number | null>(null);
   const [cropRectLabel, setCropRectLabel] = useState<string | null>(null);
+  const [microPan, setMicroPan] = useState(false);
 
   // APIキー（BYOK）モーダル用の簡易状態
   const [showKeyModal, setShowKeyModal] = useState(false);
@@ -105,6 +106,7 @@ export default function Page(props: PageProps = {}) {
             script: scriptText.trim(),
             lengthSec,
             consent,
+            microPan: microPan || undefined,
           }),
         });
         if (!res.ok) {
@@ -363,7 +365,13 @@ export default function Page(props: PageProps = {}) {
 
             <div>
               <label htmlFor={panId}>微パン</label>
-              <input id={panId} name="microPan" type="checkbox" />
+              <input
+                id={panId}
+                name="microPan"
+                type="checkbox"
+                checked={microPan}
+                onChange={(e) => setMicroPan(e.currentTarget.checked)}
+              />
             </div>
 
             <fieldset>
