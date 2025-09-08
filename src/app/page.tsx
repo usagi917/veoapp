@@ -52,6 +52,7 @@ function PageInner(props: PageProps = {}) {
   const motionId = useId();
   const panId = useId();
   const consentId = useId();
+  const consentDescId = useId();
   const errorId = useId();
   const keyInputId = useId();
   const keyModalHeadingId = useId();
@@ -444,10 +445,11 @@ function PageInner(props: PageProps = {}) {
                 id={consentId}
                 name="consent"
                 type="checkbox"
+                aria-describedby={consentDescId}
                 checked={consent}
                 onChange={(e) => setConsent(e.currentTarget.checked)}
               />
-              <div style={{ fontSize: 12, color: '#555', marginTop: 4 }}>
+              <div id={consentDescId} style={{ fontSize: 12, color: '#555', marginTop: 4 }}>
                 利用条件: 自分/権利保有のみ、未成年/有名人不可
               </div>
               {!consent && (
