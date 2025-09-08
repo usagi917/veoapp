@@ -1,8 +1,11 @@
 import React, { useId, useState } from 'react';
+import { computeSmartCropRect, pickPrimaryFaceIndex, type BBox } from '../lib/face';
 import { validateImageFile, stripExifToPng } from '../lib/image';
 
 // 最小UIスケルトン（フォーム & 進行表示）
-export type PageProps = { __test_faces?: number };
+export type PageProps = {
+  __test_faces?: number | { dims: { width: number; height: number }; bboxes: BBox[] };
+};
 
 export default function Page(props: PageProps = {}) {
   // 最小のローカル状態（まだ機能結線はしない）
@@ -14,6 +17,7 @@ export default function Page(props: PageProps = {}) {
   const [processedImage, setProcessedImage] = useState<Blob | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedFaceIndex, setSelectedFaceIndex] = useState<number | null>(null);
+  const [cropRectLabel, setCropRectLabel] = useState<string | null>(null);
 
   // APIキー（BYOK）モーダル用の簡易状態
   const [showKeyModal, setShowKeyModal] = useState(false);
@@ -60,7 +64,12 @@ export default function Page(props: PageProps = {}) {
     setIsGenerating(true);
 
     // 簡易な顔数チェック（将来の顔検出/選択UIと接続予定）
-    const faces = typeof props.__test_faces === 'number' ? props.__test_faces : undefined;
+    const faces =
+      typeof props.__test_faces === 'number'
+        ? props.__test_faces
+        : Array.isArray(props.__test_faces?.bboxes)
+          ? props.__test_faces!.bboxes.length
+          : undefined;
     if (faces === 0) {
       setErrorMsg('顔が検出できません。単一人物・正面の写真をご利用ください。');
       setIsGenerating(false);
@@ -70,6 +79,20 @@ export default function Page(props: PageProps = {}) {
       setErrorMsg('顔を1つ選択してください。');
       setIsGenerating(false);
       return;
+    }
+
+    // テスト用: 顔矩形と画像寸法が与えられている場合、16:9クロップ矩形を計算して保持
+    if (props.__test_faces && typeof props.__test_faces !== 'number') {
+      const { dims, bboxes } = props.__test_faces;
+      const idx =
+        selectedFaceIndex ??
+        (bboxes.length === 1 ? 0 : pickPrimaryFaceIndex(dims.width, dims.height, bboxes));
+      if (idx >= 0) {
+        const rect = computeSmartCropRect(dims.width, dims.height, bboxes, idx);
+        if (rect) {
+          setCropRectLabel(`クロップ完了（16:9）: ${rect.width}x${rect.height}`);
+        }
+      }
     }
 
     let lastStatus: number | null = null;
@@ -434,6 +457,7 @@ export default function Page(props: PageProps = {}) {
               <li>生成</li>
               <li>最終化</li>
             </ol>
+            {cropRectLabel && <div style={{ marginTop: 4, color: '#333' }}>{cropRectLabel}</div>}
             {isComplete && (
               <div role="status" aria-live="polite" aria-atomic="true" style={{ color: '#060' }}>
                 生成完了
