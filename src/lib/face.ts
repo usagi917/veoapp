@@ -93,7 +93,28 @@ export function pickPrimaryFaceIndex(
 }
 
 // 検出器のスタブ（将来実装）
-export async function detectFaces(_image: unknown): Promise<BBox[]> {
+export async function detectFaces(image: unknown): Promise<BBox[]> {
   // 実装は MediaPipe Tasks / face-api.js に委譲予定
-  return [];
+  // テスト容易性のため、グローバルモック `__mockFaceDetector` があればそれを使用。
+  type Mock = (img: unknown) => Promise<unknown>;
+  const g = globalThis as { __mockFaceDetector?: Mock };
+  const fromMock: Mock | null =
+    typeof g.__mockFaceDetector === 'function' ? g.__mockFaceDetector! : null;
+
+  const raw: unknown = fromMock ? await fromMock(image) : ([] as BBox[]);
+  if (!Array.isArray(raw)) return [];
+
+  const out: BBox[] = [];
+  for (const r of raw as Array<Record<string, unknown>>) {
+    if (!r) continue;
+    const x = Number(r['x'] as number | string);
+    const y = Number(r['y'] as number | string);
+    const width = Number(r['width'] as number | string);
+    const height = Number(r['height'] as number | string);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+    if (!Number.isFinite(width) || !Number.isFinite(height)) continue;
+    if (width <= 0 || height <= 0) continue;
+    out.push({ x, y, width, height });
+  }
+  return out;
 }
