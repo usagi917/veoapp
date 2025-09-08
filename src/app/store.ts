@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 export type VoiceGender = 'female' | 'male' | 'other';
 export type VoiceTone = 'slow' | 'normal' | 'energetic';
-export type Motion = 'neutral' | 'smile';
+export type Motion = 'neutral' | 'smile' | 'energetic' | 'serene' | 'nod';
 
 export type AppState = {
   microPan: boolean;

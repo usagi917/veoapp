@@ -401,6 +401,9 @@ function PageInner(props: PageProps = {}) {
               >
                 <option value="neutral">自然で落ち着いた</option>
                 <option value="smile">笑顔</option>
+                <option value="energetic">元気に（ハキハキ）</option>
+                <option value="serene">落ち着き（穏やか）</option>
+                <option value="nod">うなずき（相槌）</option>
               </select>
             </div>
 
