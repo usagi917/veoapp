@@ -5,7 +5,7 @@ import Page from './page';
 describe('APIキー入力モーダル: 閉じるとトリガーボタンへフォーカスを戻す', () => {
   it('「閉じる」押下後に「APIキー」ボタンへフォーカスが戻る', async () => {
     render(<Page />);
-    const trigger = screen.getByRole('button', { name: 'APIキー' });
+    const trigger = screen.getByRole('button', { name: '🔑 APIキー設定' });
     fireEvent.click(trigger);
 
     // モーダルが開いていることを確認

@@ -4,6 +4,10 @@ import tseslint from '@typescript-eslint/eslint-plugin';
 import tsparser from '@typescript-eslint/parser';
 
 export default [
+  // 無視パターン（ESLint v9: .eslintignore は非推奨のためフラット構成で指定）
+  {
+    ignores: ['dist/**', 'test-results/**', 'node_modules/**'],
+  },
   {
     files: ['**/*.{ts,tsx,js,jsx}'],
     languageOptions: {

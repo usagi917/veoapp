@@ -7,11 +7,11 @@ describe('APIキー登録モーダル: aria-labelledby による見出しへの�
     render(<Page />);
 
     // モーダルを開く
-    const openBtn = screen.getByRole('button', { name: 'APIキー' });
+    const openBtn = screen.getByRole('button', { name: '🔑 APIキー設定' });
     fireEvent.click(openBtn);
 
-    // アクセシブルネームは従来どおり「APIキー登録」で取得できること
-    const dialog = screen.getByRole('dialog', { name: 'APIキー登録' });
+    // アクセシブルネームは「🔐 APIキー登録」で取得できること
+    const dialog = screen.getByRole('dialog', { name: '🔐 APIキー登録' });
     expect(dialog).toBeInTheDocument();
 
     // aria-labelledby が設定されており、そのIDの要素が h2 見出しであること
@@ -20,7 +20,7 @@ describe('APIキー登録モーダル: aria-labelledby による見出しへの�
     const heading = labelledBy ? document.getElementById(labelledBy) : null;
     expect(heading).toBeTruthy();
     expect(heading?.tagName.toLowerCase()).toBe('h2');
-    // 見出しのテキストは「APIキー登録」に統一
-    expect(heading).toHaveTextContent('APIキー登録');
+    // 見出しのテキストは「🔐 APIキー登録」
+    expect(heading).toHaveTextContent('🔐 APIキー登録');
   });
 });

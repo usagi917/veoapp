@@ -14,6 +14,8 @@ export type GenerateModelSnapshot = Record<
     failure: number;
     avgMs: number;
     p99Ms: number;
+    lastDurationSec?: number;
+    lastFps?: number;
   }
 >;
 
@@ -31,6 +33,8 @@ type ModelStateItem = {
   avgMs: number;
   durations: number[];
   p99Ms: number;
+  lastDurationSec?: number;
+  lastFps?: number;
 };
 
 let generateByModel: Record<string, ModelStateItem> = {};
@@ -60,6 +64,8 @@ export function snapshotGenerateByModel(): GenerateModelSnapshot {
       failure: v.failure,
       avgMs: v.avgMs,
       p99Ms: v.p99Ms,
+      lastDurationSec: v.lastDurationSec,
+      lastFps: v.lastFps,
     };
   }
   return out;
@@ -102,6 +108,8 @@ export function begin(label: 'generate' | 'download') {
             avgMs: 0,
             durations: [],
             p99Ms: 0,
+            lastDurationSec: undefined,
+            lastFps: undefined,
           });
           item.count += 1;
           if (ok) item.success += 1;
@@ -115,6 +123,8 @@ export function begin(label: 'generate' | 'download') {
           const n = sorted.length;
           const idx = Math.max(0, Math.ceil(0.99 * n) - 1);
           item.p99Ms = sorted[idx] ?? 0;
+          if (typeof ctx?.durationSeconds === 'number') item.lastDurationSec = ctx.durationSeconds;
+          if (typeof ctx?.fps === 'number') item.lastFps = ctx.fps;
         }
       } else {
         if (ok) state.download.success += 1;

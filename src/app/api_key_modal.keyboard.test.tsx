@@ -7,11 +7,11 @@ describe('APIキー登録モーダルのキーボード操作', () => {
     render(<Page />);
 
     // モーダルを開く
-    const openBtn = screen.getByRole('button', { name: 'APIキー' });
+    const openBtn = screen.getByRole('button', { name: '🔑 APIキー設定' });
     fireEvent.click(openBtn);
 
     const dialog = screen.getByRole('dialog', { name: 'APIキー登録' });
-    const input = screen.getByLabelText('APIキー');
+    const input = screen.getByLabelText('🔑 APIキー');
 
     // 入力しておく（閉じる際にクリアされることを確認するため）
     fireEvent.change(input, { target: { value: 'sk-test-123' } });
@@ -24,7 +24,7 @@ describe('APIキー登録モーダルのキーボード操作', () => {
 
     // 再度開くと入力欄は空になっている
     fireEvent.click(openBtn);
-    const input2 = screen.getByLabelText('APIキー') as HTMLInputElement;
+    const input2 = screen.getByLabelText('🔑 APIキー') as HTMLInputElement;
     expect(input2.value).toBe('');
   });
 });

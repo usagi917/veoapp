@@ -28,7 +28,7 @@ describe('APIキー登録モーダル', () => {
     render(<Page />);
 
     // 右上の「APIキー」ボタン
-    const openBtn = screen.getByRole('button', { name: 'APIキー' });
+    const openBtn = screen.getByRole('button', { name: '🔑 APIキー設定' });
     fireEvent.click(openBtn);
 
     // モーダルが開く
@@ -36,7 +36,7 @@ describe('APIキー登録モーダル', () => {
     expect(dialog).toBeInTheDocument();
 
     // 入力して保存
-    fireEvent.change(screen.getByLabelText('APIキー'), { target: { value: 'G-xxxx' } });
+    fireEvent.change(screen.getByLabelText('🔑 APIキー'), { target: { value: 'G-xxxx' } });
     fireEvent.click(screen.getByRole('button', { name: '保存' }));
 
     await waitFor(() => {
@@ -57,9 +57,9 @@ describe('APIキー登録モーダル', () => {
     }) as unknown as typeof fetch;
 
     render(<Page />);
-    fireEvent.click(screen.getByRole('button', { name: 'APIキー' }));
+    fireEvent.click(screen.getByRole('button', { name: '🔑 APIキー設定' }));
 
-    const input = screen.getByLabelText('APIキー') as HTMLInputElement;
+    const input = screen.getByLabelText('🔑 APIキー') as HTMLInputElement;
     fireEvent.change(input, { target: { value: 'G-keep-no' } });
     fireEvent.click(screen.getByRole('button', { name: '保存' }));
 
@@ -68,7 +68,7 @@ describe('APIキー登録モーダル', () => {
     });
 
     // 入力値がクリアされている
-    expect((screen.getByLabelText('APIキー') as HTMLInputElement).value).toBe('');
+    expect((screen.getByLabelText('🔑 APIキー') as HTMLInputElement).value).toBe('');
   });
 
   it('保存失敗でエラーメッセージを表示', async () => {
@@ -81,8 +81,8 @@ describe('APIキー登録モーダル', () => {
     }) as unknown as typeof fetch;
 
     render(<Page />);
-    fireEvent.click(screen.getByRole('button', { name: 'APIキー' }));
-    fireEvent.change(screen.getByLabelText('APIキー'), { target: { value: 'bad' } });
+    fireEvent.click(screen.getByRole('button', { name: '🔑 APIキー設定' }));
+    fireEvent.change(screen.getByLabelText('🔑 APIキー'), { target: { value: 'bad' } });
     fireEvent.click(screen.getByRole('button', { name: '保存' }));
 
     await waitFor(() => {

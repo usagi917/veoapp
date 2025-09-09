@@ -7,8 +7,8 @@ describe('APIキー入力モーダル: 閉じるで入力値を消去', () => {
     render(<Page />);
 
     // 開く
-    fireEvent.click(screen.getByRole('button', { name: 'APIキー' }));
-    const input = screen.getByLabelText('APIキー') as HTMLInputElement;
+    fireEvent.click(screen.getByRole('button', { name: '🔑 APIキー設定' }));
+    const input = screen.getByLabelText('🔑 APIキー') as HTMLInputElement;
     fireEvent.change(input, { target: { value: 'G-should-be-cleared' } });
     expect(input.value).toBe('G-should-be-cleared');
 
@@ -16,8 +16,8 @@ describe('APIキー入力モーダル: 閉じるで入力値を消去', () => {
     fireEvent.click(screen.getByRole('button', { name: '閉じる' }));
 
     // もう一度開く
-    fireEvent.click(screen.getByRole('button', { name: 'APIキー' }));
-    const input2 = screen.getByLabelText('APIキー') as HTMLInputElement;
+    fireEvent.click(screen.getByRole('button', { name: '🔑 APIキー設定' }));
+    const input2 = screen.getByLabelText('🔑 APIキー') as HTMLInputElement;
     expect(input2.value).toBe('');
   });
 });

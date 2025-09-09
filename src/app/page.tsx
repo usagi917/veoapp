@@ -1,3 +1,4 @@
+// biome-ignore assist/source/organizeImports: keep React import first
 import React, { useId, useRef, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useGenerateMutation, getOpOnce } from './queries';
@@ -7,6 +8,7 @@ import { computeSmartCropRectAR, pickPrimaryFaceIndex, type BBox } from '../lib/
 import { validateImageFile, stripExifToPng } from '../lib/image';
 import { useAppStore, type VoiceGender, type VoiceTone, type Motion } from './store';
 import { ensureMd3ThemeInstalled } from './ui/theme';
+import { installEnhancedTheme } from './ui/enhanced-theme';
 // React Query は今後の結線予定
 
 // 最小UIスケルトン（フォーム & 進行表示）
@@ -15,9 +17,10 @@ export type PageProps = {
 };
 
 function PageInner(props: PageProps = {}) {
-  // MD3風の最小テーマを適用（JSDOMテストでも検証できるように <style id="md3-theme"> を挿入）
+  // MD3風のテーマと拡張UIテーマを適用
   React.useEffect(() => {
     ensureMd3ThemeInstalled();
+    installEnhancedTheme();
   }, []);
   // 最小のローカル状態（まだ機能結線はしない）
   const [lengthSec, setLengthSec] = useState<8 | 16>(8);
@@ -99,7 +102,7 @@ function PageInner(props: PageProps = {}) {
       typeof props.__test_faces === 'number'
         ? props.__test_faces
         : Array.isArray(props.__test_faces?.bboxes)
-          ? props.__test_faces!.bboxes.length
+          ? props.__test_faces?.bboxes.length
           : undefined;
     if (faces === 0) {
       setErrorMsg('顔が検出できません。単一人物・正面の写真をご利用ください。');
@@ -209,7 +212,7 @@ function PageInner(props: PageProps = {}) {
     void pollOnce();
     // 10秒間隔
     const t = setInterval(() => {
-      if (cancelled || isComplete) return;
+      if (cancelled || doneSet.size === (ops?.length ?? 0)) return;
       void pollOnce();
     }, 10_000);
     return () => {
@@ -357,38 +360,90 @@ function PageInner(props: PageProps = {}) {
   }
 
   return (
-    <div>
-      <h1>Pictalk</h1>
-
-      {/* ヘッダ右上: APIキー登録モーダル起動 */}
-      <div
-        className="top-actions"
-        style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}
+    <div
+      className="md3-container"
+      style={{
+        minHeight: '100vh',
+        paddingTop: 'var(--md3-spacing-6)',
+        paddingBottom: 'var(--md3-spacing-6)',
+      }}
+    >
+      <header
+        className="enhanced-header"
+        style={{ textAlign: 'center', marginBottom: 'var(--md3-spacing-8)', position: 'relative' }}
       >
+        <h1
+          className="md3-display-medium enhanced-title"
+          style={{ margin: '0 0 var(--md3-spacing-3) 0' }}
+        >
+          🎬 Pictalk
+        </h1>
+        <p
+          className="md3-body-large"
+          style={{ color: 'var(--md3-color-on-surface-variant)', margin: 0 }}
+        >
+          AIを使って写真から話すビデオを生成
+        </p>
+
+        {/* ヘッダ右上: APIキー登録モーダル起動 */}
         <button
           type="button"
+          className="enhanced-secondary-button"
           ref={(el) => {
             focusTriggerRef.current = () => el?.focus();
           }}
           onClick={() => setShowKeyModal(true)}
+          style={{
+            position: 'absolute',
+            top: 'var(--md3-spacing-4)',
+            right: 'var(--md3-spacing-4)',
+          }}
         >
-          APIキー
+          🔑 APIキー設定
         </button>
-      </div>
+      </header>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+      <div className="md3-grid md3-grid-2" style={{ gap: 'var(--md3-spacing-8)' }}>
         {/* 左パネル：フォーム群 */}
-        <section aria-label="左パネル">
-          <div style={{ display: 'grid', gap: 12 }}>
-            <div>
-              <label htmlFor={fileId}>画像アップロード</label>
+        <section className="md3-card enhanced-card enhanced-panel" aria-label="設定パネル">
+          <h2 className="md3-title-large" style={{ margin: '0 0 var(--md3-spacing-4) 0' }}>
+            🎛️ 生成設定
+          </h2>
+          <div className="md3-grid" style={{ gap: 'var(--md3-spacing-4)' }}>
+            <div
+              className="md3-surface enhanced-upload-zone"
+              style={{
+                textAlign: 'center',
+              }}
+            >
+              <label
+                htmlFor={fileId}
+                className="md3-title-medium"
+                style={{
+                  cursor: 'pointer',
+                  display: 'block',
+                  marginBottom: 'var(--md3-spacing-3)',
+                }}
+              >
+                📷 画像をアップロード
+              </label>
               <input
                 id={fileId}
                 name="image"
                 type="file"
                 accept="image/*"
                 onChange={handleFileChange}
+                style={{ width: '100%' }}
               />
+              <p
+                className="md3-body-small"
+                style={{
+                  color: 'var(--md3-color-on-surface-variant)',
+                  marginTop: 'var(--md3-spacing-2)',
+                }}
+              >
+                単一人物の正面写真をご利用ください
+              </p>
             </div>
 
             {/* 複数顔のときの簡易選択UI（テスト用ダミー） */}
@@ -397,7 +452,10 @@ function PageInner(props: PageProps = {}) {
                 <legend>顔の選択</legend>
                 {Array.from({ length: props.__test_faces }).map((_, i) => (
                   <label
-                    key={i}
+                    key={`face-${
+                      // biome-ignore lint/suspicious/noArrayIndexKey: test face selection only
+                      i
+                    }`}
                     style={{ display: 'inline-flex', alignItems: 'center', marginRight: 12 }}
                   >
                     <input
@@ -417,17 +475,25 @@ function PageInner(props: PageProps = {}) {
             )}
 
             <div>
-              <label htmlFor={scriptId}>セリフ</label>
+              <label htmlFor={scriptId} className="md3-title-medium">
+                💬 セリフ
+              </label>
               <textarea
                 id={scriptId}
                 name="script"
+                className="enhanced-input"
                 rows={4}
                 value={scriptText}
                 onChange={(e) => setScriptText(e.currentTarget.value)}
+                placeholder="話させたいセリフを入力してください..."
+                style={{ resize: 'vertical' }}
               />
               {scriptText.trim().length === 0 && (
-                <div style={{ fontSize: 12, color: '#900', marginTop: 4 }}>
-                  セリフを入力してください。
+                <div
+                  className="md3-body-small"
+                  style={{ color: 'var(--md3-color-error)', marginTop: 'var(--md3-spacing-2)' }}
+                >
+                  ⚠️ セリフを入力してください。
                 </div>
               )}
             </div>
@@ -437,6 +503,7 @@ function PageInner(props: PageProps = {}) {
               <select
                 id="aspectSelect"
                 name="aspect"
+                className="enhanced-select"
                 value={aspect}
                 onChange={(e) => setAspect(e.currentTarget.value as '16:9' | '9:16')}
               >
@@ -450,6 +517,7 @@ function PageInner(props: PageProps = {}) {
               <select
                 id={genderId}
                 name="gender"
+                className="enhanced-select"
                 value={voiceGender}
                 onChange={(e) => setVoiceGender(e.currentTarget.value as VoiceGender)}
               >
@@ -464,6 +532,7 @@ function PageInner(props: PageProps = {}) {
               <select
                 id={toneId}
                 name="tone"
+                className="enhanced-select"
                 value={voiceTone}
                 onChange={(e) => setVoiceTone(e.currentTarget.value as VoiceTone)}
                 aria-describedby={toneHelpId}
@@ -482,6 +551,7 @@ function PageInner(props: PageProps = {}) {
               <select
                 id="modelQuality"
                 name="model"
+                className="enhanced-select"
                 value={modelId}
                 onChange={(e) => setModelId(e.currentTarget.value)}
               >
@@ -498,6 +568,7 @@ function PageInner(props: PageProps = {}) {
               <select
                 id={motionId}
                 name="motion"
+                className="enhanced-select"
                 value={motion}
                 onChange={(e) => setMotion(e.currentTarget.value as Motion)}
               >
@@ -564,99 +635,209 @@ function PageInner(props: PageProps = {}) {
               )}
             </div>
 
-            <div>
+            <div style={{ marginTop: 'var(--md3-spacing-6)' }}>
               <button
                 type="button"
+                className="enhanced-button"
                 aria-busy={isGenerating || undefined}
                 disabled={isGenerating || scriptText.trim().length === 0 || !consent}
                 onClick={handleGenerateClick}
+                style={{
+                  width: '100%',
+                  minHeight: '3.5rem',
+                }}
               >
-                {isGenerating ? '生成中…' : '生成'}
+                {isGenerating ? '🎬 生成中…' : '🚀 動画を生成する'}
               </button>
             </div>
           </div>
         </section>
 
         {/* 右パネル：進行表示と使用台本 */}
-        <section aria-label="右パネル">
+        <section
+          className="md3-grid"
+          aria-label="ステータスパネル"
+          style={{ gap: 'var(--md3-spacing-4)' }}
+        >
+          {/* エラー・メッセージ表示 */}
           {errorMsg && (
             <div
               id={errorId}
+              className="md3-error enhanced-error"
               role="alert"
               aria-live="assertive"
-              style={{
-                border: '1px solid #f00',
-                background: '#fee',
-                color: '#900',
-                padding: 8,
-                marginBottom: 12,
-              }}
             >
-              {errorMsg}
+              ⚠️ {errorMsg}
             </div>
           )}
+
           {processedImage && !errorMsg && (
-            <div style={{ marginBottom: 12, color: '#060' }}>画像を読み込みました</div>
+            <div
+              className="md3-success"
+              style={{ display: 'flex', alignItems: 'center', gap: 'var(--md3-spacing-2)' }}
+            >
+              ✅ 画像を読み込みました
+            </div>
           )}
+
           {allowManualRetry && (
-            <div style={{ marginBottom: 12 }}>
-              <button type="button" onClick={handleGenerateClick}>
-                同じ設定で再生成
+            <div className="md3-card">
+              <button
+                type="button"
+                onClick={handleGenerateClick}
+                style={{
+                  backgroundColor: 'var(--md3-color-tertiary)',
+                  color: 'var(--md3-color-on-tertiary)',
+                  width: '100%',
+                }}
+              >
+                🔄 同じ設定で再生成
               </button>
             </div>
           )}
-          <div>
-            <h2>進行</h2>
-            <ol>
-              <li>待機</li>
-              <li>生成</li>
-              <li>最終化</li>
-            </ol>
-            {cropRectLabel && <div style={{ marginTop: 4, color: '#333' }}>{cropRectLabel}</div>}
+
+          {/* 進行状況 */}
+          <div className="md3-card enhanced-progress-card">
+            <h2
+              className="md3-title-large"
+              style={{
+                margin: '0 0 var(--md3-spacing-3) 0',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 'var(--md3-spacing-2)',
+              }}
+            >
+              📊 進行状況
+            </h2>
+            <div
+              className="md3-surface"
+              style={{
+                padding: 'var(--md3-spacing-3)',
+                backgroundColor: 'var(--md3-color-surface-container)',
+              }}
+            >
+              <ol
+                className="md3-body-large"
+                style={{ paddingLeft: 'var(--md3-spacing-5)', margin: 0 }}
+              >
+                <li style={{ marginBottom: 'var(--md3-spacing-2)' }}>⏳ 待機</li>
+                <li style={{ marginBottom: 'var(--md3-spacing-2)' }}>🎬 生成</li>
+                <li>✨ 最終化</li>
+              </ol>
+              {cropRectLabel && (
+                <div
+                  className="md3-body-small"
+                  style={{
+                    marginTop: 'var(--md3-spacing-3)',
+                    color: 'var(--md3-color-on-surface-variant)',
+                    padding: 'var(--md3-spacing-2)',
+                    backgroundColor: 'var(--md3-color-surface-container-high)',
+                    borderRadius: 'var(--md3-shape-corner-small)',
+                  }}
+                >
+                  📏 {cropRectLabel}
+                </div>
+              )}
+            </div>
+
             {isComplete && (
-              <div role="status" aria-live="polite" aria-atomic="true" style={{ color: '#060' }}>
-                生成完了
+              <div
+                className="md3-success enhanced-success"
+                role="status"
+                style={{
+                  marginTop: 'var(--md3-spacing-3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 'var(--md3-spacing-2)',
+                }}
+              >
+                🎉 生成完了
               </div>
             )}
+
             {isComplete && (_opHandles?.length || 0) > 0 && (
-              <div style={{ marginTop: 8 }}>
-                <button type="button" onClick={handleDownloadClick}>
-                  ダウンロード
+              <div style={{ marginTop: 'var(--md3-spacing-4)' }}>
+                <button
+                  type="button"
+                  onClick={handleDownloadClick}
+                  style={{
+                    backgroundColor: 'var(--md3-color-tertiary)',
+                    color: 'var(--md3-color-on-tertiary)',
+                    width: '100%',
+                    padding: 'var(--md3-spacing-4) var(--md3-spacing-6)',
+                    fontSize: 'var(--md3-title-medium-size)',
+                    fontWeight: 'var(--md3-title-medium-weight)',
+                  }}
+                >
+                  📥 ダウンロード
                 </button>
                 {downloadMsg &&
                   (downloadErr ? (
-                    <div
-                      role="alert"
-                      aria-live="assertive"
-                      style={{ marginTop: 4, fontSize: 12, color: '#900' }}
-                    >
+                    <output className="md3-error" style={{ marginTop: 'var(--md3-spacing-2)' }}>
                       {downloadMsg}
-                    </div>
+                    </output>
                   ) : (
-                    <div
-                      role="status"
-                      aria-live="polite"
-                      aria-atomic="true"
-                      style={{ marginTop: 4, fontSize: 12 }}
-                    >
+                    <output className="md3-success" style={{ marginTop: 'var(--md3-spacing-2)' }}>
                       {downloadMsg}
-                    </div>
+                    </output>
                   ))}
               </div>
             )}
           </div>
-          <div>
-            <h2>使用台本</h2>
+
+          {/* 使用台本 */}
+          <div className="md3-card">
+            <h2
+              className="md3-title-large"
+              style={{
+                margin: '0 0 var(--md3-spacing-3) 0',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 'var(--md3-spacing-2)',
+              }}
+            >
+              📝 使用台本
+            </h2>
             {usedScript && usedScript.length > 0 ? (
-              <div>
+              <div
+                className="md3-surface"
+                style={{
+                  padding: 'var(--md3-spacing-3)',
+                  backgroundColor: 'var(--md3-color-surface-container)',
+                }}
+              >
                 {usedScript.map((s, i) => (
-                  <p key={i} style={{ margin: '4px 0' }}>
+                  <p
+                    key={`script-line-${i}-${s.slice(0, 20)}`}
+                    className="md3-body-medium"
+                    style={{
+                      margin: 'var(--md3-spacing-2) 0',
+                      padding: 'var(--md3-spacing-2)',
+                      backgroundColor: 'var(--md3-color-surface-container-high)',
+                      borderRadius: 'var(--md3-shape-corner-small)',
+                      borderLeft: `4px solid var(--md3-color-primary)`,
+                    }}
+                  >
                     {s}
                   </p>
                 ))}
               </div>
             ) : (
-              <div style={{ fontSize: 12, color: '#666' }}>ここに使用した台本を表示します</div>
+              <div
+                className="md3-surface"
+                style={{
+                  padding: 'var(--md3-spacing-4)',
+                  textAlign: 'center',
+                  backgroundColor: 'var(--md3-color-surface-container)',
+                }}
+              >
+                <p
+                  className="md3-body-medium"
+                  style={{ color: 'var(--md3-color-on-surface-variant)', margin: 0 }}
+                >
+                  💭 ここに使用した台本を表示します
+                </p>
+              </div>
             )}
           </div>
         </section>
@@ -678,45 +859,106 @@ function PageInner(props: PageProps = {}) {
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(0,0,0,0.3)',
+            background: 'var(--md3-color-scrim)',
+            opacity: 0.6,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             zIndex: 1000,
+            backdropFilter: 'blur(8px)',
           }}
         >
-          <div style={{ background: '#fff', padding: 16, minWidth: 320, borderRadius: 8 }}>
-            <h2 id={keyModalHeadingId} style={{ marginTop: 0 }}>
-              APIキー登録
+          <div
+            className="md3-surface enhanced-modal"
+            style={{
+              padding: 'var(--md3-spacing-6)',
+              minWidth: '20rem',
+              maxWidth: '32rem',
+            }}
+          >
+            <h2
+              id={keyModalHeadingId}
+              className="md3-title-large"
+              style={{
+                margin: '0 0 var(--md3-spacing-4) 0',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 'var(--md3-spacing-2)',
+              }}
+            >
+              🔐 APIキー登録
             </h2>
-            <div style={{ display: 'grid', gap: 12 }}>
+
+            <div className="md3-grid" style={{ gap: 'var(--md3-spacing-4)' }}>
               <div>
-                <label htmlFor={keyInputId}>APIキー</label>
+                <label
+                  htmlFor={keyInputId}
+                  className="md3-body-medium"
+                  style={{
+                    color: 'var(--md3-color-on-surface-variant)',
+                    marginBottom: 'var(--md3-spacing-2)',
+                    display: 'block',
+                  }}
+                >
+                  🔑 APIキー
+                </label>
                 <input
                   id={keyInputId}
                   type="password"
                   autoComplete="off"
                   autoCapitalize="off"
                   spellCheck={false}
-                  autoFocus
                   value={apiKeyInput}
                   onChange={(e) => setApiKeyInput(e.currentTarget.value)}
+                  placeholder="sk-..."
+                  style={{ width: '100%' }}
                 />
+                <p
+                  className="md3-body-small"
+                  style={{
+                    color: 'var(--md3-color-on-surface-variant)',
+                    marginTop: 'var(--md3-spacing-2)',
+                    margin: 'var(--md3-spacing-2) 0 0 0',
+                  }}
+                >
+                  💡 APIキーは暗号化されて保存され、通信時のみ使用されます
+                </p>
               </div>
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                <button type="button" onClick={closeKeyModal}>
+
+              <div
+                style={{ display: 'flex', gap: 'var(--md3-spacing-3)', justifyContent: 'flex-end' }}
+              >
+                <button
+                  type="button"
+                  onClick={closeKeyModal}
+                  style={{
+                    backgroundColor: 'var(--md3-color-surface-variant)',
+                    color: 'var(--md3-color-on-surface-variant)',
+                  }}
+                >
                   閉じる
                 </button>
                 <button
                   type="button"
                   onClick={handleSaveApiKey}
                   disabled={apiKeyInput.trim().length === 0}
+                  style={{
+                    backgroundColor:
+                      apiKeyInput.trim().length > 0
+                        ? 'var(--md3-color-primary)'
+                        : 'var(--md3-color-surface-variant)',
+                    color:
+                      apiKeyInput.trim().length > 0
+                        ? 'var(--md3-color-on-primary)'
+                        : 'var(--md3-color-on-surface-variant)',
+                  }}
                 >
-                  保存
+                  💾 保存
                 </button>
               </div>
-              {keySaveMsg && <div>{keySaveMsg}</div>}
-              {keySaveError && <div style={{ color: '#900' }}>{keySaveError}</div>}
+
+              {keySaveMsg && <div className="md3-success">✅ {keySaveMsg}</div>}
+              {keySaveError && <div className="md3-error">❌ {keySaveError}</div>}
             </div>
           </div>
         </div>

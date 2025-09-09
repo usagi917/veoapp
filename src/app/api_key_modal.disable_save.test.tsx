@@ -7,10 +7,10 @@ describe('APIキー入力モーダル: 空入力時は保存ボタンをdisabled
     render(<Page />);
 
     // モーダルを開く
-    fireEvent.click(screen.getByRole('button', { name: 'APIキー' }));
+    fireEvent.click(screen.getByRole('button', { name: '🔑 APIキー設定' }));
 
     const saveBtn = screen.getByRole('button', { name: '保存' });
-    const input = screen.getByLabelText('APIキー');
+    const input = screen.getByLabelText('🔑 APIキー');
 
     // 初期は空なので disabled
     expect(saveBtn).toBeDisabled();

@@ -1,3 +1,4 @@
+// biome-ignore assist/source/organizeImports: preserve import order
 import { Buffer } from 'node:buffer';
 import { getSid } from '../lib/cookies';
 import { verifyCsrfToken } from '../lib/csrf';
@@ -22,6 +23,7 @@ export type PostGenerateInput = {
     consent?: boolean;
     csrf?: string;
     model?: string; // 'veo-3.0-fast-generate-preview' | 'veo-3.0-generate-preview'
+    aspect?: '16:9' | '9:16';
   };
 };
 
@@ -74,7 +76,8 @@ async function generateOnce(args: GenerateArgs): Promise<string> {
   const isAllowed =
     requested === 'veo-3.0-fast-generate-preview' || requested === 'veo-3.0-generate-preview';
   const modelToUse = isAllowed
-    ? requested!
+    ? // biome-ignore lint/style/noNonNullAssertion: requested is already checked above
+      requested!
     : ((DEFAULT_VEO_MODEL as string | undefined) ?? 'veo-3.0-fast-generate-preview');
   const res = await client.models.generateVideos({
     model: modelToUse,
@@ -142,7 +145,7 @@ export async function postGenerate({
       lengthSec: z.union([z.literal(8), z.literal(16)]),
       consent: z.literal(true),
       csrf: z.string().min(1),
-      model: z.enum(['veo-3.0-fast-generate-preview', 'veo-3.0-generate-preview']).optional(),
+      model: z.string().optional(),
       aspect: z.enum(['16:9', '9:16']).optional(),
     })
     .strict();
@@ -158,6 +161,14 @@ export async function postGenerate({
   const tone = input.voice?.tone || 'normal';
   const lengthSec = input.lengthSec;
   const aspect = input.aspect ?? '16:9';
+  // モデルの最終決定（不正値は既定へフォールバック）
+  const requestedModel = input.model;
+  const isAllowedModel =
+    requestedModel === 'veo-3.0-fast-generate-preview' ||
+    requestedModel === 'veo-3.0-generate-preview';
+  const usedModel = isAllowedModel
+    ? (requestedModel as string)
+    : ((DEFAULT_VEO_MODEL as string | undefined) ?? 'veo-3.0-fast-generate-preview');
 
   const parsed = parsePngDataUrl(image);
   if (!parsed) {
@@ -183,7 +194,7 @@ export async function postGenerate({
           negative,
           imageBytes: parsed.bytes,
           mimeType: 'image/png',
-          model: input.model,
+          model: usedModel,
           aspect,
         });
         return [op];
@@ -195,7 +206,7 @@ export async function postGenerate({
         negative,
         imageBytes: parsed.bytes,
         mimeType: 'image/png',
-        model: input.model,
+        model: usedModel,
         aspect,
       });
       const opB = await generateOnce({
@@ -204,7 +215,7 @@ export async function postGenerate({
         negative,
         imageBytes: parsed.bytes,
         mimeType: 'image/png',
-        model: input.model,
+        model: usedModel,
         aspect,
       });
       return [opA, opB];
@@ -215,12 +226,12 @@ export async function postGenerate({
 
   const first = await attempt();
   if (first) {
-    endMetrics(true, { model: input.model ?? DEFAULT_VEO_MODEL, durationSeconds: 8, fps: 24 });
+    endMetrics(true, { model: usedModel, durationSeconds: 8, fps: 24 });
     return { status: 200, headers: resHeaders, body: { ops: first, usedScript: segments } };
   }
   const second = await attempt();
   if (second) {
-    endMetrics(true, { model: input.model ?? DEFAULT_VEO_MODEL, durationSeconds: 8, fps: 24 });
+    endMetrics(true, { model: usedModel, durationSeconds: 8, fps: 24 });
     return { status: 200, headers: resHeaders, body: { ops: second, usedScript: segments } };
   }
   try {
@@ -230,6 +241,6 @@ export async function postGenerate({
   } catch {
     // ignore logging errors
   }
-  endMetrics(false, { model: input.model ?? DEFAULT_VEO_MODEL, durationSeconds: 8, fps: 24 });
+  endMetrics(false, { model: usedModel, durationSeconds: lengthSec, fps: 24 });
   return { status: 500, headers: resHeaders, body: { error: 'generate_error' } };
 }
