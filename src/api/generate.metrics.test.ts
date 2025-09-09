@@ -10,6 +10,7 @@ vi.mock('../lib/kv', () => {
 
 vi.mock('../lib/genai', () => {
   return {
+    DEFAULT_VEO_MODEL: 'veo-3.0-fast-generate-preview',
     makeClient: vi.fn(() => ({
       models: {
         generateVideos: vi.fn(async () => ({ operation: 'op-xyz' })),

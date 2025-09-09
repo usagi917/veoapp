@@ -1,6 +1,8 @@
 // 実運用では @google/genai をラップする予定だが、
 // テスト容易性のために最小の疎通メソッドだけ定義する。
 
+export const DEFAULT_VEO_MODEL = 'veo-3.0-fast-generate-preview';
+
 export type GenAiClient = {
   ping: () => Promise<void>;
   operations: {

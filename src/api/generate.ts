@@ -2,7 +2,7 @@ import { Buffer } from 'node:buffer';
 import { getSid } from '../lib/cookies';
 import { verifyCsrfToken } from '../lib/csrf';
 import { getKey } from '../lib/kv';
-import { makeClient } from '../lib/genai';
+import { makeClient, DEFAULT_VEO_MODEL } from '../lib/genai';
 import { fitScriptAndSplit } from '../lib/script';
 import { buildPrompt } from '../lib/prompt';
 import { z } from 'zod';
@@ -60,8 +60,9 @@ type GenClient = {
 
 async function generateOnce(args: GenerateArgs): Promise<string> {
   const client = makeClient(args.apiKey) as unknown as GenClient;
+  const modelToUse = (DEFAULT_VEO_MODEL as string | undefined) ?? 'veo-3.0-fast-generate-preview';
   const res = await client.models.generateVideos({
-    model: 'veo-3.0-generate-preview',
+    model: modelToUse,
     prompt: args.prompt,
     image: { imageBytes: args.imageBytes, mimeType: args.mimeType },
     config: {

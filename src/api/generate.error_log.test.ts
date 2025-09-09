@@ -9,6 +9,7 @@ vi.mock('../lib/kv', () => {
 
 vi.mock('../lib/genai', () => {
   return {
+    DEFAULT_VEO_MODEL: 'veo-3.0-fast-generate-preview',
     makeClient: vi.fn(() => ({
       models: {
         // 失敗を強制して 500 パスへ誘導

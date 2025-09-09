@@ -10,6 +10,7 @@ vi.mock('../lib/kv', () => {
 
 vi.mock('../lib/genai', () => {
   return {
+    DEFAULT_VEO_MODEL: 'veo-3.0-fast-generate-preview',
     makeClient: vi.fn(() => ({
       models: {
         generateVideos: vi.fn(async () => ({ operation: 'op-123' })),
@@ -81,9 +82,12 @@ describe('POST /api/generate (8秒×1)', () => {
     // 1回のみ呼ばれる
     expect(spy?.mock.calls.length).toBe(1);
     const args = (spy?.mock.calls[0] as unknown[])[0] as {
+      model: string;
       prompt: string;
       config?: { negativePrompt?: string; personGeneration?: string };
     };
+    // 既定モデルは Fast（veo-3.0-fast-generate-preview）
+    expect(args.model).toBe('veo-3.0-fast-generate-preview');
     expect(args.prompt).toMatch(/女性の声|トーン/);
     expect(args.config?.negativePrompt).toBeDefined();
     expect(args.config?.personGeneration).toBe('allow_adult');
