@@ -5,6 +5,10 @@ export function aspect16by9(width: number, height: number): boolean {
   return width * 9 === height * 16;
 }
 
+export function aspect9by16(width: number, height: number): boolean {
+  return width * 16 === height * 9;
+}
+
 function clamp(v: number, min: number, max: number): number {
   if (v < min) return min;
   if (v > max) return max;
@@ -15,28 +19,43 @@ function centerOf(b: BBox): { cx: number; cy: number } {
   return { cx: b.x + b.width / 2, cy: b.y + b.height / 2 };
 }
 
+/** 汎用：画像内に収まる最大の aspectW:aspectH 矩形サイズ（整数, 切り下げ） */
+function maxRectInside(
+  imageWidth: number,
+  imageHeight: number,
+  aspectW: number,
+  aspectH: number,
+): { width: number; height: number } {
+  if (imageWidth <= 0 || imageHeight <= 0) return { width: 0, height: 0 };
+  const targetW = imageHeight * (aspectW / aspectH);
+  if (imageWidth >= targetW) {
+    // 横に余裕がある：高さ優先で幅を決める
+    const width = Math.floor(targetW);
+    const height = Math.floor((width * aspectH) / aspectW);
+    return { width, height };
+  }
+  // 縦に余裕がある：幅優先で高さを決める
+  const width = Math.floor(imageWidth);
+  const height = Math.floor((width * aspectH) / aspectW);
+  return { width, height };
+}
+
 /**
  * 画像内に収まる最大の 16:9 矩形サイズを返す（整数、縦横は切り下げ）。
  */
 export function maxRect16by9Inside(
   imageWidth: number,
   imageHeight: number,
-): {
-  width: number;
-  height: number;
-} {
-  if (imageWidth <= 0 || imageHeight <= 0) return { width: 0, height: 0 };
-  const arW = imageHeight * (16 / 9);
-  if (imageWidth >= arW) {
-    // 横に余裕がある：高さ優先で幅を決める
-    const width = Math.floor(arW);
-    const height = Math.floor((width * 9) / 16);
-    return { width, height };
-  }
-  // 縦に余裕がある：幅優先で高さを決める
-  const width = Math.floor(imageWidth);
-  const height = Math.floor((width * 9) / 16);
-  return { width, height };
+): { width: number; height: number } {
+  return maxRectInside(imageWidth, imageHeight, 16, 9);
+}
+
+/** 画像内に収まる最大の 9:16 矩形サイズ */
+export function maxRect9by16Inside(
+  imageWidth: number,
+  imageHeight: number,
+): { width: number; height: number } {
+  return maxRectInside(imageWidth, imageHeight, 9, 16);
 }
 
 /**
@@ -53,6 +72,31 @@ export function computeSmartCropRect(
   if (index < 0 || index >= faces.length) return undefined;
   const face = faces[index];
   const { width: rectW, height: rectH } = maxRect16by9Inside(imageWidth, imageHeight);
+  if (rectW <= 0 || rectH <= 0) return undefined;
+  const { cx, cy } = centerOf(face);
+  const x = clamp(Math.round(cx - rectW / 2), 0, Math.max(0, imageWidth - rectW));
+  const y = clamp(Math.round(cy - rectH / 2), 0, Math.max(0, imageHeight - rectH));
+  return { x, y, width: rectW, height: rectH };
+}
+
+/**
+ * 顔重心を中心に置きつつ、画像内に収まる aspect に応じた矩形を算出する。
+ * aspect は '16:9' | '9:16'。
+ */
+export function computeSmartCropRectAR(
+  imageWidth: number,
+  imageHeight: number,
+  faces: BBox[],
+  index: number,
+  aspect: '16:9' | '9:16' = '16:9',
+): Rect | undefined {
+  if (!Array.isArray(faces) || faces.length === 0) return undefined;
+  if (index < 0 || index >= faces.length) return undefined;
+  const face = faces[index];
+  const { width: rectW, height: rectH } =
+    aspect === '9:16'
+      ? maxRect9by16Inside(imageWidth, imageHeight)
+      : maxRect16by9Inside(imageWidth, imageHeight);
   if (rectW <= 0 || rectH <= 0) return undefined;
   const { cx, cy } = centerOf(face);
   const x = clamp(Math.round(cx - rectW / 2), 0, Math.max(0, imageWidth - rectW));

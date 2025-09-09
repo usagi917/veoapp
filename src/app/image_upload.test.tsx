@@ -66,20 +66,22 @@ describe('画像アップロードの検証とEXIF除去フロー', () => {
     });
   });
 
-  it('短辺<1080pxで「画像の短辺が1080px以上必要です」エラーを表示', async () => {
+  it('低解像度でもエラーにならず処理が進む（どんなサイズでもOK）', async () => {
     vi.mocked(imageMod.validateImageFile).mockResolvedValueOnce({
-      ok: false,
-      reason: 'resolution',
-      message: '画像の短辺が1080px以上必要です。',
+      ok: true,
+      meta: { mime: 'image/png', sizeBytes: 512, width: 640, height: 480 },
     });
 
     render(<Page />);
     const input = screen.getByLabelText('画像アップロード');
-    const small = makeFile('small.png', 'image/png', 1000);
+    const small = makeFile('small.png', 'image/png', 512);
     fireEvent.change(input, { target: { files: [small] } });
 
     await waitFor(() => {
-      expect(screen.getByRole('alert')).toHaveTextContent('画像の短辺が1080px以上必要です。');
+      // エラーは出ない
+      expect(screen.queryByRole('alert')).toBeNull();
+      // EXIF除去が呼ばれる
+      expect(imageMod.stripExifToPng).toHaveBeenCalledTimes(1);
     });
   });
 

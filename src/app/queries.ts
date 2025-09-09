@@ -11,6 +11,8 @@ export type GenerateVars = {
   csrf: string;
   // モデルID（省略時はAPI側既定: veo-3.0-fast-generate-preview）
   model?: string;
+  // アスペクト比（省略時はAPI側既定: '16:9'）
+  aspect?: '16:9' | '9:16';
 };
 
 export type GenerateResult = { ops: string[]; usedScript: string[] };

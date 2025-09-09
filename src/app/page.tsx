@@ -3,9 +3,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useGenerateMutation, getOpOnce } from './queries';
 import { getFfmpeg } from '../lib/ffmpeg';
 import { concatMp4Copy } from '../lib/concat';
-import { computeSmartCropRect, pickPrimaryFaceIndex, type BBox } from '../lib/face';
+import { computeSmartCropRectAR, pickPrimaryFaceIndex, type BBox } from '../lib/face';
 import { validateImageFile, stripExifToPng } from '../lib/image';
 import { useAppStore, type VoiceGender, type VoiceTone, type Motion } from './store';
+import { ensureMd3ThemeInstalled } from './ui/theme';
 // React Query は今後の結線予定
 
 // 最小UIスケルトン（フォーム & 進行表示）
@@ -14,6 +15,10 @@ export type PageProps = {
 };
 
 function PageInner(props: PageProps = {}) {
+  // MD3風の最小テーマを適用（JSDOMテストでも検証できるように <style id="md3-theme"> を挿入）
+  React.useEffect(() => {
+    ensureMd3ThemeInstalled();
+  }, []);
   // 最小のローカル状態（まだ機能結線はしない）
   const [lengthSec, setLengthSec] = useState<8 | 16>(8);
   const [scriptText, setScriptText] = useState('');
@@ -47,6 +52,8 @@ function PageInner(props: PageProps = {}) {
   const setMotion = useAppStore((s) => s.setMotion);
   // モデル/品質セレクタ（Fast/標準）
   const [modelId, setModelId] = useState<string>('veo-3.0-fast-generate-preview');
+  // アスペクト比（16:9 / 9:16）
+  const [aspect, setAspect] = useState<'16:9' | '9:16'>('16:9');
 
   // アクセシビリティ用ID（label関連付け）
   const fileId = useId();
@@ -105,16 +112,16 @@ function PageInner(props: PageProps = {}) {
       return;
     }
 
-    // テスト用: 顔矩形と画像寸法が与えられている場合、16:9クロップ矩形を計算して保持
+    // テスト用: 顔矩形と画像寸法が与えられている場合、選択アスペクト比でクロップ矩形を計算して保持
     if (props.__test_faces && typeof props.__test_faces !== 'number') {
       const { dims, bboxes } = props.__test_faces;
       const idx =
         selectedFaceIndex ??
         (bboxes.length === 1 ? 0 : pickPrimaryFaceIndex(dims.width, dims.height, bboxes));
       if (idx >= 0) {
-        const rect = computeSmartCropRect(dims.width, dims.height, bboxes, idx);
+        const rect = computeSmartCropRectAR(dims.width, dims.height, bboxes, idx, aspect);
         if (rect) {
-          setCropRectLabel(`クロップ完了（16:9）: ${rect.width}x${rect.height}`);
+          setCropRectLabel(`クロップ完了（${aspect}）: ${rect.width}x${rect.height}`);
         }
       }
     }
@@ -133,6 +140,7 @@ function PageInner(props: PageProps = {}) {
           csrf: 'test.csrf',
           image: 'data:image/png;base64,aGVsbG8=',
           model: modelId,
+          aspect,
         } as unknown as import('./queries').GenerateVars);
         if (data && Array.isArray(data.usedScript)) setUsedScript(data.usedScript);
         if (data && Array.isArray(data.ops) && data.ops.length > 0) setOps(data.ops);
@@ -353,7 +361,10 @@ function PageInner(props: PageProps = {}) {
       <h1>Pictalk</h1>
 
       {/* ヘッダ右上: APIキー登録モーダル起動 */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+      <div
+        className="top-actions"
+        style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}
+      >
         <button
           type="button"
           ref={(el) => {
@@ -419,6 +430,19 @@ function PageInner(props: PageProps = {}) {
                   セリフを入力してください。
                 </div>
               )}
+            </div>
+
+            <div>
+              <label htmlFor="aspectSelect">アスペクト比</label>
+              <select
+                id="aspectSelect"
+                name="aspect"
+                value={aspect}
+                onChange={(e) => setAspect(e.currentTarget.value as '16:9' | '9:16')}
+              >
+                <option value="16:9">16:9</option>
+                <option value="9:16">9:16</option>
+              </select>
             </div>
 
             <div>

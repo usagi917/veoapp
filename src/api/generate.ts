@@ -47,6 +47,7 @@ type GenerateArgs = {
   imageBytes: Uint8Array;
   mimeType: 'image/png';
   model?: string;
+  aspect?: '16:9' | '9:16';
 };
 
 type GenClient = {
@@ -56,7 +57,7 @@ type GenClient = {
       prompt: string;
       image: { imageBytes: Uint8Array; mimeType: 'image/png' };
       config: {
-        aspectRatio: '16:9';
+        aspectRatio: '16:9' | '9:16';
         negativePrompt: string;
         personGeneration: 'allow_adult';
         durationSeconds?: number;
@@ -80,7 +81,7 @@ async function generateOnce(args: GenerateArgs): Promise<string> {
     prompt: args.prompt,
     image: { imageBytes: args.imageBytes, mimeType: args.mimeType },
     config: {
-      aspectRatio: '16:9',
+      aspectRatio: args.aspect ?? '16:9',
       negativePrompt: args.negative,
       personGeneration: 'allow_adult',
       durationSeconds: 8,
@@ -142,6 +143,7 @@ export async function postGenerate({
       consent: z.literal(true),
       csrf: z.string().min(1),
       model: z.enum(['veo-3.0-fast-generate-preview', 'veo-3.0-generate-preview']).optional(),
+      aspect: z.enum(['16:9', '9:16']).optional(),
     })
     .strict();
 
@@ -155,6 +157,7 @@ export async function postGenerate({
   const script = input.script.trim();
   const tone = input.voice?.tone || 'normal';
   const lengthSec = input.lengthSec;
+  const aspect = input.aspect ?? '16:9';
 
   const parsed = parsePngDataUrl(image);
   if (!parsed) {
@@ -181,6 +184,7 @@ export async function postGenerate({
           imageBytes: parsed.bytes,
           mimeType: 'image/png',
           model: input.model,
+          aspect,
         });
         return [op];
       }
@@ -192,6 +196,7 @@ export async function postGenerate({
         imageBytes: parsed.bytes,
         mimeType: 'image/png',
         model: input.model,
+        aspect,
       });
       const opB = await generateOnce({
         apiKey,
@@ -200,6 +205,7 @@ export async function postGenerate({
         imageBytes: parsed.bytes,
         mimeType: 'image/png',
         model: input.model,
+        aspect,
       });
       return [opA, opB];
     } catch {

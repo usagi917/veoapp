@@ -76,4 +76,39 @@ describe('モデル切替とGenerateVideosConfigの適用', () => {
     expect(args.config.generateAudio).toBe(true);
     expect(args.config.personGeneration).toBe('allow_adult');
   });
+
+  it('アスペクト比 9:16 を指定したら config.aspectRatio が "9:16" になる', async () => {
+    const sid = 's-portrait';
+    const csrf = issueCsrfToken(sid);
+    const headers = new Headers({ Cookie: `sid=${sid}` });
+    const res = await postGenerate({
+      headers,
+      body: {
+        image: pngDataUrl,
+        script: 'テスト',
+        voice: { tone: 'normal' },
+        motion: 'neutral',
+        microPan: false,
+        lengthSec: 8,
+        consent: true,
+        csrf,
+        aspect: '9:16',
+      } as unknown as Parameters<typeof postGenerate>[0]['body'],
+    });
+    expect(res.status).toBe(200);
+    const mk = makeClient as unknown as {
+      mock: {
+        results: { value: { models: { generateVideos: { mock: { calls: unknown[][] } } } } }[];
+      };
+    };
+    const client0 = mk.mock.results.at(-1)?.value;
+    const spy = client0?.models.generateVideos;
+    const args = (spy?.mock.calls[0] as unknown[])[0] as {
+      model: string;
+      config: {
+        aspectRatio?: string;
+      };
+    };
+    expect(args.config.aspectRatio).toBe('9:16');
+  });
 });

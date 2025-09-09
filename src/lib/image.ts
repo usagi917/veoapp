@@ -27,10 +27,7 @@ export function validateImageMeta(meta: ImageMeta): ValidationResult {
   if (meta.sizeBytes > MAX_SIZE) {
     return { ok: false, reason: 'size', message: 'ファイルサイズが大きすぎます（最大10MB）。' };
   }
-  const short = Math.min(meta.width, meta.height);
-  if (short < 1080) {
-    return { ok: false, reason: 'resolution', message: '画像の短辺が1080px以上必要です。' };
-  }
+  // 仕様変更: どんなサイズでもOK（解像度の下限チェックを撤廃）
   return { ok: true, meta };
 }
 
