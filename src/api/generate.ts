@@ -209,12 +209,12 @@ export async function postGenerate({
 
   const first = await attempt();
   if (first) {
-    endMetrics(true);
+    endMetrics(true, { model: input.model ?? DEFAULT_VEO_MODEL, durationSeconds: 8, fps: 24 });
     return { status: 200, headers: resHeaders, body: { ops: first, usedScript: segments } };
   }
   const second = await attempt();
   if (second) {
-    endMetrics(true);
+    endMetrics(true, { model: input.model ?? DEFAULT_VEO_MODEL, durationSeconds: 8, fps: 24 });
     return { status: 200, headers: resHeaders, body: { ops: second, usedScript: segments } };
   }
   try {
@@ -224,6 +224,6 @@ export async function postGenerate({
   } catch {
     // ignore logging errors
   }
-  endMetrics(false);
+  endMetrics(false, { model: input.model ?? DEFAULT_VEO_MODEL, durationSeconds: 8, fps: 24 });
   return { status: 500, headers: resHeaders, body: { error: 'generate_error' } };
 }
