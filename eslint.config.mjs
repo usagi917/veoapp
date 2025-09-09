@@ -71,4 +71,17 @@ export default [
       'react-hooks/exhaustive-deps': 'off',
     },
   },
+  {
+    files: ['e2e/**/*.ts'],
+    languageOptions: {
+      globals: {
+        Buffer: 'readonly',
+        DataTransfer: 'readonly',
+        atob: 'readonly',
+        Event: 'readonly',
+        test: 'readonly',
+        expect: 'readonly',
+      },
+    },
+  },
 ];
