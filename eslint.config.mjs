@@ -14,6 +14,7 @@ export default [
       globals: {
         document: 'readonly',
         window: 'readonly',
+        location: 'readonly',
         console: 'readonly',
         URL: 'readonly',
         Headers: 'readonly',
@@ -28,6 +29,8 @@ export default [
         setInterval: 'readonly',
         clearInterval: 'readonly',
         RequestInfo: 'readonly',
+        RequestInit: 'readonly',
+        setTimeout: 'readonly',
       },
     },
     plugins: {

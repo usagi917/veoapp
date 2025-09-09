@@ -29,7 +29,7 @@ export async function getOp({ headers, query }: GetOpInput): Promise<GetOpOutput
 
   try {
     const client = makeClient(apiKey);
-    const op: unknown = await client.operations.getVideosOperation({ operation: id });
+    const op: unknown = await client.operations.getVideosOperation({ operationName: id });
     const o = op as { done?: boolean; generatedVideos?: { video?: string }[] };
     if (!o?.done) return { status: 200, headers: resHeaders, body: { done: false } };
 

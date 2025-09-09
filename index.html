@@ -8,7 +8,10 @@
   <body>
     <div id="root"></div>
     <script type="module">
+      import { installFetchMock } from '/src/dev/mock_api.ts';
       import { mount } from '/src/dev/main.tsx';
+      // 開発/プレビューでAPIモックを有効化（実演用）。
+      installFetchMock();
       const el = document.getElementById('root');
       if (el) mount(el);
     </script>
