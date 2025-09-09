@@ -82,7 +82,14 @@ export async function getDownload({
     resHeaders.set('Content-Disposition', `attachment; filename="${formatFileName()}"`);
     endMetrics(true);
     return { status: 200, headers: resHeaders, body: data };
-  } catch {
+  } catch (err) {
+    // 失敗時は最小のエラーログを記録（PIIレス）
+    try {
+      const { logApiError } = await import('../lib/log');
+      logApiError('download', err, { handle: ver.handle });
+    } catch {
+      // ignore logging errors
+    }
     endMetrics(false);
     return { status: 500, headers: resHeaders, body: { error: 'download_error' } };
   }
