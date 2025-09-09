@@ -21,6 +21,7 @@ export type PostGenerateInput = {
     lengthSec?: number; // MVPでは8のみ対応（Step 5-3）
     consent?: boolean;
     csrf?: string;
+    model?: string; // 'veo-3.0-fast-generate-preview' | 'veo-3.0-generate-preview'
   };
 };
 
@@ -45,6 +46,7 @@ type GenerateArgs = {
   negative: string;
   imageBytes: Uint8Array;
   mimeType: 'image/png';
+  model?: string;
 };
 
 type GenClient = {
@@ -53,14 +55,26 @@ type GenClient = {
       model: string;
       prompt: string;
       image: { imageBytes: Uint8Array; mimeType: 'image/png' };
-      config: { aspectRatio: '16:9'; negativePrompt: string; personGeneration: 'allow_adult' };
+      config: {
+        aspectRatio: '16:9';
+        negativePrompt: string;
+        personGeneration: 'allow_adult';
+        durationSeconds?: number;
+        fps?: number;
+        generateAudio?: boolean;
+      };
     }) => Promise<{ operation?: string; name?: string }>;
   };
 };
 
 async function generateOnce(args: GenerateArgs): Promise<string> {
   const client = makeClient(args.apiKey) as unknown as GenClient;
-  const modelToUse = (DEFAULT_VEO_MODEL as string | undefined) ?? 'veo-3.0-fast-generate-preview';
+  const requested = args.model;
+  const isAllowed =
+    requested === 'veo-3.0-fast-generate-preview' || requested === 'veo-3.0-generate-preview';
+  const modelToUse = isAllowed
+    ? requested!
+    : ((DEFAULT_VEO_MODEL as string | undefined) ?? 'veo-3.0-fast-generate-preview');
   const res = await client.models.generateVideos({
     model: modelToUse,
     prompt: args.prompt,
@@ -69,6 +83,9 @@ async function generateOnce(args: GenerateArgs): Promise<string> {
       aspectRatio: '16:9',
       negativePrompt: args.negative,
       personGeneration: 'allow_adult',
+      durationSeconds: 8,
+      fps: 24,
+      generateAudio: true,
     },
   });
   const id = (res && (res.operation || res.name)) as string | undefined;
@@ -124,6 +141,7 @@ export async function postGenerate({
       lengthSec: z.union([z.literal(8), z.literal(16)]),
       consent: z.literal(true),
       csrf: z.string().min(1),
+      model: z.enum(['veo-3.0-fast-generate-preview', 'veo-3.0-generate-preview']).optional(),
     })
     .strict();
 
@@ -162,6 +180,7 @@ export async function postGenerate({
           negative,
           imageBytes: parsed.bytes,
           mimeType: 'image/png',
+          model: input.model,
         });
         return [op];
       }
@@ -172,6 +191,7 @@ export async function postGenerate({
         negative,
         imageBytes: parsed.bytes,
         mimeType: 'image/png',
+        model: input.model,
       });
       const opB = await generateOnce({
         apiKey,
@@ -179,6 +199,7 @@ export async function postGenerate({
         negative,
         imageBytes: parsed.bytes,
         mimeType: 'image/png',
+        model: input.model,
       });
       return [opA, opB];
     } catch {

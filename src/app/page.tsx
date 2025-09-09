@@ -45,6 +45,8 @@ function PageInner(props: PageProps = {}) {
   const setVoiceTone = useAppStore((s) => s.setVoiceTone);
   const motion = useAppStore((s) => s.motion);
   const setMotion = useAppStore((s) => s.setMotion);
+  // モデル/品質セレクタ（Fast/標準）
+  const [modelId, setModelId] = useState<string>('veo-3.0-fast-generate-preview');
 
   // アクセシビリティ用ID（label関連付け）
   const fileId = useId();
@@ -130,6 +132,7 @@ function PageInner(props: PageProps = {}) {
           motion,
           csrf: 'test.csrf',
           image: 'data:image/png;base64,aGVsbG8=',
+          model: modelId,
         } as unknown as import('./queries').GenerateVars);
         if (data && Array.isArray(data.usedScript)) setUsedScript(data.usedScript);
         if (data && Array.isArray(data.ops) && data.ops.length > 0) setOps(data.ops);
@@ -447,6 +450,22 @@ function PageInner(props: PageProps = {}) {
               </select>
               <div id={toneHelpId} style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
                 トーン説明: slow=ゆっくり, normal=ふつう, energetic=元気/ハキハキ
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="modelQuality">品質</label>
+              <select
+                id="modelQuality"
+                name="model"
+                value={modelId}
+                onChange={(e) => setModelId(e.currentTarget.value)}
+              >
+                <option value="veo-3.0-fast-generate-preview">Fast（高速・720p既定）</option>
+                <option value="veo-3.0-generate-preview">標準（高品質）</option>
+              </select>
+              <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
+                料金はご利用のAPIキーの課金に準拠します。詳細は公式価格をご確認ください。
               </div>
             </div>
 

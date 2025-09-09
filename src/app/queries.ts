@@ -9,6 +9,8 @@ export type GenerateVars = {
   lengthSec: 8 | 16;
   consent: true;
   csrf: string;
+  // モデルID（省略時はAPI側既定: veo-3.0-fast-generate-preview）
+  model?: string;
 };
 
 export type GenerateResult = { ops: string[]; usedScript: string[] };
