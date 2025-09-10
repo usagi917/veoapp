@@ -9,6 +9,9 @@ import { validateImageFile, stripExifToPng } from '../lib/image';
 import { useAppStore, type VoiceGender, type VoiceTone, type Motion } from './store';
 import { ensureMd3ThemeInstalled } from './ui/theme';
 import { installEnhancedTheme } from './ui/enhanced-theme';
+import { McpStatus } from './McpStatus';
+import { ModernSelect } from './ModernSelect';
+import { ModernTextarea } from './ModernTextarea';
 // React Query は今後の結線予定
 
 // 最小UIスケルトン（フォーム & 進行表示）
@@ -63,7 +66,6 @@ function PageInner(props: PageProps = {}) {
   const scriptId = useId();
   const genderId = useId();
   const toneId = useId();
-  const toneHelpId = useId();
   const motionId = useId();
   const panId = useId();
   const consentId = useId();
@@ -72,6 +74,37 @@ function PageInner(props: PageProps = {}) {
   const keyInputId = useId();
   const keyModalHeadingId = useId();
   const focusTriggerRef = useRef<(() => void) | null>(null);
+
+  // セレクト要素のオプション定義
+  const aspectOptions = [
+    { value: '16:9', label: '16:9（横長）', icon: '📱' },
+    { value: '9:16', label: '9:16（縦長）', icon: '📲' },
+  ];
+
+  const genderOptions = [
+    { value: 'female', label: '女性', icon: '👩' },
+    { value: 'male', label: '男性', icon: '👨' },
+    { value: 'other', label: 'その他', icon: '👤' },
+  ];
+
+  const toneOptions = [
+    { value: 'slow', label: 'ゆっくり', icon: '🐌' },
+    { value: 'normal', label: 'ふつう', icon: '😊' },
+    { value: 'energetic', label: '元気・ハキハキ', icon: '⚡' },
+  ];
+
+  const modelOptions = [
+    { value: 'veo-3.0-fast-generate-preview', label: 'Fast（高速・720p）', icon: '⚡' },
+    { value: 'veo-3.0-generate-preview', label: '標準（高品質）', icon: '✨' },
+  ];
+
+  const motionOptions = [
+    { value: 'neutral', label: '自然で落ち着いた', icon: '😌' },
+    { value: 'smile', label: '笑顔', icon: '😊' },
+    { value: 'energetic', label: '元気に（ハキハキ）', icon: '😄' },
+    { value: 'serene', label: '落ち着き（穏やか）', icon: '😇' },
+    { value: 'nod', label: 'うなずき（相槌）', icon: '🤔' },
+  ];
 
   // React Query: 将来の導入用のプレースホルダ。
 
@@ -385,6 +418,19 @@ function PageInner(props: PageProps = {}) {
           AIを使って写真から話すビデオを生成
         </p>
 
+        {/* 左上にMCP接続ステータス（最小表示） */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 'var(--md3-spacing-4)',
+            left: 'var(--md3-spacing-4)',
+            fontSize: 12,
+            color: 'var(--md3-color-on-surface-variant)',
+          }}
+        >
+          <McpStatus />
+        </div>
+
         {/* ヘッダ右上: APIキー登録モーダル起動 */}
         <button
           type="button"
@@ -474,111 +520,98 @@ function PageInner(props: PageProps = {}) {
               </fieldset>
             )}
 
-            <div>
-              <label htmlFor={scriptId} className="md3-title-medium">
-                💬 セリフ
-              </label>
-              <textarea
-                id={scriptId}
-                name="script"
-                className="enhanced-input"
-                rows={4}
-                value={scriptText}
-                onChange={(e) => setScriptText(e.currentTarget.value)}
-                placeholder="話させたいセリフを入力してください..."
-                style={{ resize: 'vertical' }}
-              />
-              {scriptText.trim().length === 0 && (
-                <div
-                  className="md3-body-small"
-                  style={{ color: 'var(--md3-color-error)', marginTop: 'var(--md3-spacing-2)' }}
-                >
-                  ⚠️ セリフを入力してください。
-                </div>
-              )}
-            </div>
+            <ModernTextarea
+              id={scriptId}
+              name="script"
+              label="💬 セリフ"
+              value={scriptText}
+              onChange={setScriptText}
+              placeholder="話させたいセリフを入力してください..."
+              rows={4}
+              autoResize={true}
+              maxRows={8}
+              size="md"
+              variant="outline"
+              color="primary"
+              required={true}
+              className="mb-4"
+              error={scriptText.trim().length === 0 ? 'セリフを入力してください' : undefined}
+            />
+
+            <ModernSelect
+              id="aspectSelect"
+              name="aspect"
+              label="📱 アスペクト比"
+              value={aspect}
+              options={aspectOptions}
+              onChange={(value) => setAspect(value as '16:9' | '9:16')}
+              size="md"
+              variant="outline"
+              color="primary"
+              className="mb-4"
+            />
+
+            <ModernSelect
+              id={genderId}
+              name="gender"
+              label="👤 性別"
+              value={voiceGender}
+              options={genderOptions}
+              onChange={(value) => setVoiceGender(value as VoiceGender)}
+              size="md"
+              variant="outline"
+              color="primary"
+              className="mb-4"
+            />
 
             <div>
-              <label htmlFor="aspectSelect">アスペクト比</label>
-              <select
-                id="aspectSelect"
-                name="aspect"
-                className="enhanced-select"
-                value={aspect}
-                onChange={(e) => setAspect(e.currentTarget.value as '16:9' | '9:16')}
-              >
-                <option value="16:9">16:9</option>
-                <option value="9:16">9:16</option>
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor={genderId}>性別</label>
-              <select
-                id={genderId}
-                name="gender"
-                className="enhanced-select"
-                value={voiceGender}
-                onChange={(e) => setVoiceGender(e.currentTarget.value as VoiceGender)}
-              >
-                <option value="female">女性</option>
-                <option value="male">男性</option>
-                <option value="other">その他</option>
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor={toneId}>トーン</label>
-              <select
+              <ModernSelect
                 id={toneId}
                 name="tone"
-                className="enhanced-select"
+                label="🎵 トーン"
                 value={voiceTone}
-                onChange={(e) => setVoiceTone(e.currentTarget.value as VoiceTone)}
-                aria-describedby={toneHelpId}
-              >
-                <option value="slow">slow</option>
-                <option value="normal">normal</option>
-                <option value="energetic">energetic</option>
-              </select>
-              <div id={toneHelpId} style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
-                トーン説明: slow=ゆっくり, normal=ふつう, energetic=元気/ハキハキ
+                options={toneOptions}
+                onChange={(value) => setVoiceTone(value as VoiceTone)}
+                size="md"
+                variant="outline"
+                color="primary"
+                className="mb-2"
+              />
+              <div className="text-xs text-gray-500 dark:text-gray-400">
+                音声の話し方の設定です
               </div>
             </div>
 
             <div>
-              <label htmlFor="modelQuality">品質</label>
-              <select
+              <ModernSelect
                 id="modelQuality"
                 name="model"
-                className="enhanced-select"
+                label="⚙️ 品質設定"
                 value={modelId}
-                onChange={(e) => setModelId(e.currentTarget.value)}
-              >
-                <option value="veo-3.0-fast-generate-preview">Fast（高速・720p既定）</option>
-                <option value="veo-3.0-generate-preview">標準（高品質）</option>
-              </select>
-              <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
-                料金はご利用のAPIキーの課金に準拠します。詳細は公式価格をご確認ください。
+                options={modelOptions}
+                onChange={(value) => setModelId(value)}
+                size="md"
+                variant="outline"
+                color="primary"
+                className="mb-2"
+              />
+              <div className="text-xs text-gray-500 dark:text-gray-400">
+                料金はご利用のAPIキーの課金に準拠します
               </div>
             </div>
 
-            <div>
-              <label htmlFor={motionId}>動き</label>
-              <select
-                id={motionId}
-                name="motion"
-                className="enhanced-select"
-                value={motion}
-                onChange={(e) => setMotion(e.currentTarget.value as Motion)}
-              >
-                <option value="neutral">自然で落ち着いた</option>
-                <option value="smile">笑顔</option>
-                <option value="energetic">元気に（ハキハキ）</option>
-                <option value="serene">落ち着き（穏やか）</option>
-                <option value="nod">うなずき（相槌）</option>
-              </select>
-            </div>
+            <ModernSelect
+              id={motionId}
+              name="motion"
+              label="🎭 動きの表現"
+              value={motion}
+              options={motionOptions}
+              onChange={(value) => setMotion(value as Motion)}
+              size="md"
+              variant="outline"
+              color="primary"
+              className="mb-4"
+            />
 
             <div>
               <label htmlFor={panId}>微パン</label>
