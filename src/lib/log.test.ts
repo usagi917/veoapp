@@ -35,6 +35,11 @@ describe('log: sanitizeGenerateInput', () => {
     expect(s.motion).toBe('neutral');
     expect(s.microPan).toBe(true);
   });
+
+  it('JPEG画像でもhasImageがtrueになる', () => {
+    const s = sanitizeGenerateInput({ image: 'data:image/jpeg;base64,abc' });
+    expect(s.hasImage).toBe(true);
+  });
 });
 
 describe('log: logEvent', () => {

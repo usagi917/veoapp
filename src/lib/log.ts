@@ -16,30 +16,39 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 
 export function sanitizeGenerateInput(body: unknown): SafeGenerateLog {
   const r = isRecord(body) ? body : {};
-  const image = typeof r.image === 'string' ? r.image : '';
-  const script = typeof r.script === 'string' ? r.script : '';
+
+  /**
+   * 値が文字列ならそのまま返し、そうでなければ undefined。
+   * 呼び出し側でデフォルト値を与える想定。
+   */
+  function getString(v: unknown): string | undefined {
+    return typeof v === 'string' ? v : undefined;
+  }
+
+  /**
+   * 値が真偽値ならそのまま返し、そうでなければ undefined。
+   */
+  function getBoolean(v: unknown): boolean | undefined {
+    return typeof v === 'boolean' ? v : undefined;
+  }
+
+  const image = getString(r.image);
+  const script = getString(r.script) ?? '';
   const voiceR = isRecord(r.voice) ? r.voice : undefined;
-  const hasImage = /^data:image\/png;base64,/i.test(image);
-  const lengthSec = r.lengthSec === 8 || r.lengthSec === 16 ? (r.lengthSec as 8 | 16) : undefined;
-  const consent = typeof r.consent === 'boolean' ? r.consent : undefined;
-  const motion = typeof r.motion === 'string' ? r.motion : undefined;
-  const microPan = typeof r.microPan === 'boolean' ? r.microPan : undefined;
+  const hasImage =
+    typeof image === 'string' && /^data:image\/(?:png|jpe?g|webp);base64,/i.test(image);
+  const lengthSec = r.lengthSec === 8 || r.lengthSec === 16 ? r.lengthSec : undefined;
+  const consent = getBoolean(r.consent);
+  const motion = getString(r.motion);
+  const microPan = getBoolean(r.microPan);
   const voice = voiceR
     ? {
-        gender: typeof voiceR.gender === 'string' ? voiceR.gender : undefined,
-        tone: typeof voiceR.tone === 'string' ? voiceR.tone : undefined,
+        gender: getString(voiceR.gender),
+        tone: getString(voiceR.tone),
       }
     : undefined;
 
-  return {
-    hasImage,
-    scriptChars: script.length,
-    lengthSec,
-    consent,
-    voice,
-    motion,
-    microPan,
-  };
+  return { hasImage, scriptChars: script.length, lengthSec, consent, voice, motion, microPan };
 }
 
 type LogType =
