@@ -30,7 +30,14 @@ function parseCookieHeader(header: string | null | undefined): Record<string, st
     if (idx <= 0) continue;
     const name = pair.slice(0, idx).trim();
     const val = pair.slice(idx + 1).trim();
-    out[name] = decodeURIComponent(val);
+    let decoded: string;
+    try {
+      decoded = decodeURIComponent(val);
+    } catch {
+      // 変なパーセントエンコードがあっても落ちないようにそのまま使う
+      decoded = val;
+    }
+    out[name] = decoded;
   }
   return out;
 }

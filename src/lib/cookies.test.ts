@@ -22,6 +22,11 @@ describe('cookies', () => {
     expect(getSid(headers)).toBe('xyz-789');
   });
 
+  it('getSid: 不正なエンコードでも落ちずにそのまま返す', () => {
+    const headers = new Headers({ Cookie: 'sid=%E0%A4%A' });
+    expect(getSid(headers)).toBe('%E0%A4%A');
+  });
+
   it('getSid: sidが無い場合はundefined', () => {
     const headers = new Headers({ Cookie: 'foo=1; bar=2' });
     expect(getSid(headers)).toBeUndefined();
