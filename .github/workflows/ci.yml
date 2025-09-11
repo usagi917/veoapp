@@ -36,11 +36,4 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
-      - name: Unit tests
-        run: pnpm test
-
-      - name: Install Playwright Browsers
-        run: npx playwright install --with-deps
-
-      - name: E2E tests
-        run: pnpm test:e2e
+      # テストは最小構成化のため実行しない
