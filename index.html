@@ -10,7 +10,7 @@
     <script type="module">
       import { installFetchMock } from '/src/dev/mock_api.ts';
       import { mount } from '/src/dev/main.tsx';
-      // 開発/プレビューでAPIモックを有効化（実演用）。
+      // 開発ではモック、 本番では /api/generate を実装関数へ委譲するフェッチフックを有効化
       installFetchMock();
       const el = document.getElementById('root');
       if (el) mount(el);

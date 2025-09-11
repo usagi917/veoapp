@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function Page() {
   const [file, setFile] = useState<File | null>(null);
@@ -53,6 +53,7 @@ export default function Page() {
       }
       setVideoUrl(body.videoUrl);
     } catch (e) {
+      console.error('Generation error:', e);
       setError('エラーが発生しました');
     } finally {
       setLoading(false);
@@ -121,7 +122,8 @@ export default function Page() {
         )}
 
         {videoUrl && (
-          <video src={videoUrl} controls style={{ width: '100%', maxHeight: 360 }} />
+          // biome-ignore lint/a11y/useMediaCaption: useMediaCaption is not needed
+<video src={videoUrl} controls style={{ width: '100%', maxHeight: 360 }} />
         )}
       </div>
     </div>

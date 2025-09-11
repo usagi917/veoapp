@@ -1,9 +1,13 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import Page from '../app/simple';
 
-export function mount(root: Element) {
+export async function mount(root: Element) {
   const rt = createRoot(root);
-  rt.render(<Page />);
+  if (import.meta.env.PROD) {
+    const { default: Page } = await import('../app/page');
+    rt.render(<Page />);
+  } else {
+    const { default: Simple } = await import('../app/simple');
+    rt.render(<Simple />);
+  }
 }
-

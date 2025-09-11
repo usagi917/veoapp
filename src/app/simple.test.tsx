@@ -69,5 +69,27 @@ describe('SimplePage (APIキー手入力仕様)', () => {
       expect(sent.script).toBe('こんにちは');
     });
   });
+
+  it('空のops配列が返された場合はエラーメッセージを表示する', async () => {
+    global.fetch = vi.fn(async () =>
+      new Response(JSON.stringify({ ops: [] }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }) as unknown as Response,
+    ) as any;
+
+    render(<SimplePage />);
+    const idea = screen.getByLabelText('イメージ');
+    const keyInput = screen.getByLabelText('APIキー');
+    const btn = screen.getByRole('button', { name: '生成' });
+
+    fireEvent.change(idea, { target: { value: 'こんにちは' } });
+    fireEvent.change(keyInput, { target: { value: 'sk-test-abc' } });
+    fireEvent.click(btn);
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent('生成に失敗しました');
+    });
+  });
 });
 

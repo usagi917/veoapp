@@ -16,6 +16,7 @@ function ensureSid(): string {
   const m = /(?:^|;\s*)sid=([^;]+)/.exec(document.cookie || '');
   if (m) return decodeURIComponent(m[1]);
   const sid = `s_${Math.random().toString(36).slice(2, 10)}`;
+  // biome-ignore lint/suspicious/noDocumentCookie: noDocumentCookie is not needed
   document.cookie = `sid=${encodeURIComponent(sid)}; path=/; SameSite=Lax`;
   return sid;
 }
@@ -44,6 +45,16 @@ async function handleApi(url: URL, init?: RequestInit): Promise<Response> {
   if (path === '/api/generate' && (init?.method || 'GET').toUpperCase() === 'POST') {
     ensureSid();
     const body = await parseJson(init);
+    // 本番ビルド時は実装関数へ委譲（ブラウザ内で実行）
+    if (import.meta.env.PROD) {
+      const { postGenerate } = await import('../api/generate');
+      const out = await postGenerate({ headers: {}, body });
+      const hs: Record<string, string> = {};
+      // biome-ignore lint/suspicious/noAssignInExpressions: noAssignInExpressions is not needed
+      out.headers.forEach((v, k) => (hs[k] = v));
+      return new Response(JSON.stringify(out.body), { status: out.status, headers: hs });
+    }
+    // 開発モードはモックのハッピーパス
     const len = Number(body.lengthSec || 8);
     const n = len === 16 ? 2 : 1;
     const ops: string[] = [];
@@ -116,4 +127,3 @@ export function installFetchMock(): void {
   }) as typeof window.fetch;
   w.__apiMockInstalled = true;
 }
-

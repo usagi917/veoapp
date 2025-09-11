@@ -65,6 +65,7 @@ export default function SimplePage() {
       const ops = Array.isArray(body.ops) ? body.ops : [];
       if (ops.length === 0) throw new Error('no_ops');
 
+      // biome-ignore lint/style/noNonNullAssertion: noNonNullAssertion is not needed
       const id = ops[0]!;
       async function pollOnce(): Promise<boolean> {
         const r = await fetch(`/api/op?id=${encodeURIComponent(id)}`);
@@ -83,7 +84,7 @@ export default function SimplePage() {
         const ok = await pollOnce();
         if (ok) clearInterval(t);
       }, 10_000);
-    } catch (e) {
+    } catch (_e) {
       setError('生成に失敗しました');
       setIsGenerating(false);
     }
