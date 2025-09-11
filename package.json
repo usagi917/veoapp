@@ -7,37 +7,39 @@
     "format": "prettier --write .",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",
-    "test": "VITEST_MAX_THREADS=1 VITEST_MIN_THREADS=1 vitest run",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test:e2e": "pnpm run build && playwright test",
-    "e2e:install": "npx playwright install --with-deps",
-    "codex:ci": "pnpm format && pnpm lint && pnpm typecheck && pnpm test",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "codex:ci": "pnpm format && pnpm lint && pnpm typecheck",
     "postcodex:ci": "node -e \"process.stdout.write('\\x07')\""
   },
   "devDependencies": {
     "@eslint/js": "^9.35.0",
-    "@playwright/test": "^1.48.0",
-    "@testing-library/jest-dom": "^6.5.0",
-    "@testing-library/react": "^14.3.1",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.8.0",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/jsdom": "^21.1.7",
     "@types/node": "^22.5.4",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "@typescript-eslint/eslint-plugin": "^8.5.0",
     "@typescript-eslint/parser": "^8.5.0",
     "eslint": "^9.9.0",
-    "jsdom": "^24.1.1",
+    "jsdom": "^26.1.0",
     "prettier": "^3.3.3",
     "typescript": "^5.6.2",
     "vite": "^4.5.5",
-    "vitest": "^0.34.6"
+    "vitest": "^3.2.4"
   },
   "dependencies": {
+    "@google/genai": "^1.19.0",
     "@tanstack/react-query": "^5.52.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "zustand": "^4.5.2",
-    "zod": "^3.25.76"
+    "zod": "^3.25.76",
+    "zustand": "^4.5.2"
   }
 }

@@ -1,30 +1,22 @@
 /*
-  開発プレビュー/デモ用の簡易フェッチモック。
+  開発プレビュー/デモ用の簡易フェッチモック（Simpleモード）。
   - /api/* への fetch をブラウザ内で処理し、最小限のハッピーパスを返す。
-  - 実運用サーバーや外部APIは使わず、インメモリで sid→apiKey、op、token を管理。
+  - BYOKは不要。sidを付与しつつ、インメモリで op/token を管理。
 */
 
 type Json = Record<string, unknown>;
-
 type Op = { id: string; done: boolean; handle?: string };
 
 const mem = {
-  keys: new Map<string, string>(), // sid -> apiKey
   ops: new Map<string, Op>(),
   tokens: new Map<string, { handle: string; exp: number }>(),
 };
 
-function sidFromCookie(): string | null {
-  const m = /(?:^|;\s*)sid=([^;]+)/.exec(document.cookie || '');
-  return m ? decodeURIComponent(m[1]) : null;
-}
-
 function ensureSid(): string {
-  let sid = sidFromCookie();
-  if (!sid) {
-    sid = `s_${Math.random().toString(36).slice(2, 10)}`;
-    document.cookie = `sid=${encodeURIComponent(sid)}; path=/; SameSite=Lax`;
-  }
+  const m = /(?:^|;\s*)sid=([^;]+)/.exec(document.cookie || '');
+  if (m) return decodeURIComponent(m[1]);
+  const sid = `s_${Math.random().toString(36).slice(2, 10)}`;
+  document.cookie = `sid=${encodeURIComponent(sid)}; path=/; SameSite=Lax`;
   return sid;
 }
 
@@ -47,20 +39,10 @@ async function parseJson(init?: RequestInit | undefined): Promise<Json> {
 
 async function handleApi(url: URL, init?: RequestInit): Promise<Response> {
   const path = url.pathname;
-  // /api/key (POST)
-  if (path === '/api/key' && (init?.method || 'GET').toUpperCase() === 'POST') {
-    const body = await parseJson(init);
-    const apiKey = String(body.apiKey || '');
-    if (!apiKey) return jsonResponse(400, { error: 'invalid_input' });
-    const sid = ensureSid();
-    mem.keys.set(sid, apiKey);
-    return jsonResponse(200, { ok: true });
-  }
 
-  // /api/generate (POST)
+  // /api/generate（POST）
   if (path === '/api/generate' && (init?.method || 'GET').toUpperCase() === 'POST') {
-    const sid = sidFromCookie();
-    if (!sid || !mem.keys.has(sid)) return jsonResponse(401, { error: 'unauthorized' });
+    ensureSid();
     const body = await parseJson(init);
     const len = Number(body.lengthSec || 8);
     const n = len === 16 ? 2 : 1;
@@ -69,19 +51,15 @@ async function handleApi(url: URL, init?: RequestInit): Promise<Response> {
       const id = `op_${Math.random().toString(36).slice(2, 10)}`;
       mem.ops.set(id, { id, done: false });
       ops.push(id);
-      // 簡易に少し遅延させて完了
       setTimeout(() => {
         const handle = `h_${Math.random().toString(36).slice(2, 8)}`;
         mem.ops.set(id, { id, done: true, handle });
       }, 10);
     }
-    const usedScript = Array.isArray(body.script)
-      ? (body.script as string[])
-      : [String(body.script || '')];
-    return jsonResponse(200, { ops, usedScript });
+    return jsonResponse(200, { ops });
   }
 
-  // /api/op?id=... (GET)
+  // /api/op（GET）
   if (path === '/api/op' && (init?.method || 'GET').toUpperCase() === 'GET') {
     const id = url.searchParams.get('id') || '';
     const op = mem.ops.get(id);
@@ -91,10 +69,9 @@ async function handleApi(url: URL, init?: RequestInit): Promise<Response> {
     return jsonResponse(200, { done: true, handle: op.handle });
   }
 
-  // /api/download/issue (POST)
+  // /api/download/issue（POST）
   if (path === '/api/download/issue' && (init?.method || 'GET').toUpperCase() === 'POST') {
-    const sid = sidFromCookie();
-    if (!sid || !mem.keys.has(sid)) return jsonResponse(401, { error: 'unauthorized' });
+    ensureSid();
     const body = await parseJson(init);
     const handle = String(body.handle || '');
     if (!handle) return jsonResponse(400, { error: 'invalid_input' });
@@ -103,12 +80,11 @@ async function handleApi(url: URL, init?: RequestInit): Promise<Response> {
     return jsonResponse(200, { token });
   }
 
-  // /api/download?token=... (GET)
+  // /api/download（GET）
   if (path === '/api/download' && (init?.method || 'GET').toUpperCase() === 'GET') {
     const token = url.searchParams.get('token') || '';
     const rec = mem.tokens.get(token);
     if (!rec || rec.exp < Date.now()) return new Response('forbidden', { status: 403 });
-    // 擬似バイナリ（中身はダミー）
     const data = new Uint8Array([0, 1, 2, 3]);
     return new Response(data, {
       status: 200,
@@ -118,14 +94,6 @@ async function handleApi(url: URL, init?: RequestInit): Promise<Response> {
         'Content-Disposition': 'attachment; filename="pictalk_demo.mp4"',
       },
     });
-  }
-
-  // /api/download/invalidate (POST)
-  if (path === '/api/download/invalidate' && (init?.method || 'GET').toUpperCase() === 'POST') {
-    const body = await parseJson(init);
-    const token = String(body.token || '');
-    if (token) mem.tokens.delete(token);
-    return jsonResponse(200, { ok: true });
   }
 
   return new Response('not handled', { status: 404 });
@@ -148,3 +116,4 @@ export function installFetchMock(): void {
   }) as typeof window.fetch;
   w.__apiMockInstalled = true;
 }
+
