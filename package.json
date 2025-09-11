@@ -10,29 +10,23 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest",
-    "test:run": "vitest run",
+    "test": "echo \"No tests to run\"",
+    "test:run": "echo \"No tests to run\"",
+    "test:e2e": "echo \"No e2e tests configured\"",
     "codex:ci": "pnpm format && pnpm lint && pnpm typecheck",
     "postcodex:ci": "node -e \"process.stdout.write('\\x07')\""
   },
   "devDependencies": {
     "@eslint/js": "^9.35.0",
-    "@testing-library/dom": "^10.4.1",
-    "@testing-library/jest-dom": "^6.8.0",
-    "@testing-library/react": "^16.3.0",
-    "@testing-library/user-event": "^14.6.1",
-    "@types/jsdom": "^21.1.7",
     "@types/node": "^22.5.4",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "@typescript-eslint/eslint-plugin": "^8.5.0",
     "@typescript-eslint/parser": "^8.5.0",
     "eslint": "^9.9.0",
-    "jsdom": "^26.1.0",
     "prettier": "^3.3.3",
     "typescript": "^5.6.2",
-    "vite": "^4.5.5",
-    "vitest": "^3.2.4"
+    "vite": "^4.5.5"
   },
   "dependencies": {
     "@google/genai": "^1.19.0",

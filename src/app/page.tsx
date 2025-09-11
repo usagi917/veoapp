@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Container, Card, Input, Textarea, Button, Alert } from '../components/ui';
 
 export default function Page() {
   const [file, setFile] = useState<File | null>(null);
@@ -65,174 +64,162 @@ export default function Page() {
     setFile(e.target.files?.[0] ?? null);
   };
 
-  const iconSvg = (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
-      <circle cx="12" cy="13" r="3"/>
-    </svg>
-  );
-
-  const keyIcon = (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/>
-      <path d="m21 2-9.6 9.6"/>
-      <circle cx="7.5" cy="15.5" r="5.5"/>
-    </svg>
-  );
 
   return (
-    <div className="gradient-bg" style={{ 
-      minHeight: '100vh', 
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      padding: '40px 0',
-    }}>
-      <Container maxWidth="md">
-        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-          <h1 className="hero-title" style={{ 
-            fontSize: '48px',
-            fontWeight: '700',
-            color: '#ffffff',
-            margin: '0 0 16px 0',
-            fontFamily: 'system-ui, -apple-system, sans-serif',
-            textShadow: '0 2px 4px rgba(0,0,0,0.1)',
-          }}>
-            Veo 3 AI 動画生成
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-slate-900 via-slate-700 to-slate-900 dark:from-white dark:via-slate-200 dark:to-white bg-clip-text text-transparent mb-4 tracking-tight">
+            AI 動画生成
           </h1>
-          <p className="hero-subtitle" style={{
-            fontSize: '18px',
-            color: '#f1f5f9',
-            margin: 0,
-            fontFamily: 'system-ui, -apple-system, sans-serif',
-          }}>
+          <p className="text-lg sm:text-xl text-slate-600 dark:text-slate-300 font-medium">
             写真とテキストから魅力的な動画を生成
           </p>
         </div>
 
-        <Card variant="elevated" padding="lg">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <Input
-              label="APIキー"
-              type="password"
-              placeholder="sk-..."
-              value={apiKey}
-              onChange={(e) => {
-                const v = e.target.value;
-                setApiKey(v);
-                try {
-                  localStorage.setItem('apiKey', v);
-                } catch {
-                  // noop
-                }
-              }}
-              icon={keyIcon}
-              size="lg"
-            />
+        <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 dark:border-slate-700/30 p-8">
+          <div className="space-y-8">
+            <div className="space-y-2">
+              <label htmlFor="api-key-input" className="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-2">
+                APIキー
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <svg className="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m21 2-9.6 9.6" />
+                    <circle cx="7.5" cy="15.5" r="5.5" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} />
+                  </svg>
+                </div>
+                <input
+                  id="api-key-input"
+                  type="password"
+                  placeholder="sk-..."
+                  value={apiKey}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setApiKey(v);
+                    try {
+                      localStorage.setItem('apiKey', v);
+                    } catch {
+                      // noop
+                    }
+                  }}
+                  className="w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 backdrop-blur-sm"
+                />
+              </div>
+            </div>
 
-            <div>
-              <label htmlFor="file-upload" style={{
-                display: 'block',
-                fontSize: '14px',
-                fontWeight: '500',
-                color: '#374151',
-                marginBottom: '6px',
-                fontFamily: 'system-ui, -apple-system, sans-serif',
-              }}>
+            <div className="space-y-2">
+              <label htmlFor="file-upload" className="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-2">
                 画像をアップロード
               </label>
-              <div style={{
-                border: '2px dashed #d1d5db',
-                borderRadius: '12px',
-                padding: '32px',
-                textAlign: 'center',
-                backgroundColor: file ? '#f0fdf4' : '#f9fafb',
-                transition: 'all 0.2s ease-in-out',
-                cursor: 'pointer',
-              }}>
+              <div className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 cursor-pointer hover:border-blue-400 ${
+                file 
+                  ? 'border-emerald-300 bg-emerald-50/50 dark:border-emerald-500 dark:bg-emerald-900/20' 
+                  : 'border-slate-300 dark:border-slate-600 bg-slate-50/50 dark:bg-slate-700/30 hover:bg-slate-100/50 dark:hover:bg-slate-600/30'
+              }`}>
                 <input
                   type="file"
                   accept="image/*"
                   onChange={handleFileChange}
-                  style={{ display: 'none' }}
+                  className="sr-only"
                   id="file-upload"
                 />
-                <label 
-                  htmlFor="file-upload" 
-                  style={{ 
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '8px',
-                  }}
-                >
-                  <div style={{ color: file ? '#059669' : '#9ca3af' }}>
-                    {iconSvg}
+                <label htmlFor="file-upload" className="cursor-pointer flex flex-col items-center space-y-3">
+                  <div className={`${file ? 'text-emerald-500' : 'text-slate-400 dark:text-slate-500'}`}>
+                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+                      <circle cx="12" cy="13" r="3" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} />
+                    </svg>
                   </div>
-                  <span style={{
-                    fontSize: '14px',
-                    color: file ? '#059669' : '#6b7280',
-                    fontFamily: 'system-ui, -apple-system, sans-serif',
-                  }}>
-                    {file ? `選択済み: ${file.name}` : 'クリックして画像を選択'}
-                  </span>
+                  <div className="space-y-1">
+                    <p className={`text-sm font-medium ${
+                      file ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-300'
+                    }`}>
+                      {file ? `選択済み: ${file.name}` : 'クリックして画像を選択'}
+                    </p>
+                    {!file && (
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        PNG, JPG, GIF up to 10MB
+                      </p>
+                    )}
+                  </div>
                 </label>
               </div>
             </div>
 
-            <Textarea
-              label="動画の内容"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder="どんな動画にしたいか詳しく書いてください。例：優しく自己紹介して、最後に手を振る"
-              size="lg"
-              rows={4}
-            />
+            <div className="space-y-2">
+              <label htmlFor="content-textarea" className="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-2">
+                動画の内容
+              </label>
+              <textarea
+                id="content-textarea"
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                placeholder="どんな動画にしたいか詳しく書いてください。例：優しく自己紹介して、最後に手を振る"
+                rows={4}
+                className="w-full px-4 py-4 bg-white/50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 backdrop-blur-sm resize-none"
+              />
+            </div>
 
-            <Button
+            <button
+              type="button"
               onClick={onGenerate}
               disabled={loading || !file || !text.trim() || !apiKey.trim()}
-              loading={loading}
-              size="lg"
-              style={{ width: '100%' }}
+              className={`w-full py-4 px-6 rounded-xl font-semibold text-white transition-all duration-200 ${
+                loading || !file || !text.trim() || !apiKey.trim()
+                  ? 'bg-slate-300 dark:bg-slate-600 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transform hover:scale-[1.02] shadow-lg hover:shadow-xl'
+              }`}
             >
-              {loading ? '動画生成中...' : '動画を生成'}
-            </Button>
+              {loading ? (
+                <div className="flex items-center justify-center space-x-2">
+                  <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  <span>動画生成中...</span>
+                </div>
+              ) : (
+                '動画を生成'
+              )}
+            </button>
 
             {error && (
-              <Alert variant="error">
-                {error}
-              </Alert>
+              <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
+                <div className="flex">
+                  <svg className="h-5 w-5 text-red-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div className="ml-3">
+                    <p className="text-sm font-medium text-red-800 dark:text-red-200">
+                      {error}
+                    </p>
+                  </div>
+                </div>
+              </div>
             )}
 
             {videoUrl && (
-              <Card variant="outlined" padding="md">
-                <h3 style={{
-                  fontSize: '18px',
-                  fontWeight: '600',
-                  color: '#374151',
-                  marginBottom: '16px',
-                  fontFamily: 'system-ui, -apple-system, sans-serif',
-                }}>
+              <div className="bg-white/50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl p-6 backdrop-blur-sm">
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
                   生成された動画
                 </h3>
                 <video 
                   src={videoUrl} 
                   controls 
-                  style={{ 
-                    width: '100%', 
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                  }}
+                  className="w-full rounded-lg shadow-lg"
                   aria-label="生成された動画"
                 >
                   <track kind="captions" srcLang="ja" label="日本語" />
                   このブラウザは動画をサポートしていません。
                 </video>
-              </Card>
+              </div>
             )}
           </div>
-        </Card>
-      </Container>
+        </div>
+      </div>
     </div>
   );
 }
