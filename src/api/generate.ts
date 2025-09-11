@@ -37,15 +37,21 @@ export async function postGenerate(_req: PostGenerateInput): Promise<PostGenerat
 
 // --- Helpers for in-browser generation (BYOK) ---
 
-function dataUrlToUint8Array(dataUrl: string): Uint8Array {
+function parseDataUrl(dataUrl: string): { mimeType: string | null; base64: string | null; bytes: Uint8Array } {
   const m = /^data:(.*?);base64,(.*)$/.exec(dataUrl);
-  if (!m) return new Uint8Array();
-  const b64 = m[2]!;
-  const bin = atob(b64);
-  const len = bin.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) bytes[i] = bin.charCodeAt(i);
-  return bytes;
+  if (!m) return { mimeType: null, base64: null, bytes: new Uint8Array() };
+  const mimeType = m[1] || null;
+  const b64 = m[2] || null;
+  let bytes = new Uint8Array();
+  try {
+    const bin = atob(String(b64));
+    const len = bin.length;
+    bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) bytes[i] = bin.charCodeAt(i);
+  } catch {
+    bytes = new Uint8Array();
+  }
+  return { mimeType, base64: b64, bytes };
 }
 
 async function sleep(ms: number) {
@@ -75,19 +81,40 @@ export async function generateVideoInBrowser(args: {
   if (!GoogleAI) throw new Error('genai_sdk_not_found');
   const client: any = new GoogleAI({ apiKey: args.apiKey });
 
-  const imageBytes = dataUrlToUint8Array(args.imageDataUrl);
+  const parsed = parseDataUrl(args.imageDataUrl);
+  const imageBytes = parsed.bytes;
   const model = 'veo-3.0-generate-preview';
 
   // 1) 動画生成ジョブの発行
   let op: any;
-  if (client?.models?.generateVideos) {
-    op = await client.models.generateVideos({ model, prompt: args.prompt, image: imageBytes });
-  } else if (client?.models?.generateVideo) {
-    op = await client.models.generateVideo({ model, prompt: args.prompt, image: imageBytes });
-  } else if (client?.models?.videos?.generate) {
-    op = await client.models.videos.generate({ model, prompt: args.prompt, image: imageBytes });
-  } else {
+  const base = { model, prompt: args.prompt } as const;
+
+  // リクエスト試行ユーティリティ（新/旧SDKの差異を吸収）
+  const tryGenerate = async (imageParam: any) => {
+    if (client?.models?.generateVideos) {
+      return await client.models.generateVideos({ ...base, image: imageParam });
+    } else if (client?.models?.generateVideo) {
+      return await client.models.generateVideo({ ...base, image: imageParam });
+    } else if (client?.models?.videos?.generate) {
+      return await client.models.videos.generate({ ...base, image: imageParam });
+    }
     throw new Error('genai_generate_not_supported');
+  };
+
+  // 新SDKは image: { bytesBase64Encoded, mimeType } を要求するためまずこの形式で試す
+  let firstError: any | null = null;
+  try {
+    if (!parsed.base64 || !parsed.mimeType) throw new Error('invalid_data_url');
+    op = await tryGenerate({ bytesBase64Encoded: parsed.base64, mimeType: parsed.mimeType });
+  } catch (e) {
+    firstError = e;
+    // 旧実装との互換のため、Uint8Array 形式でも再試行
+    try {
+      op = await tryGenerate(imageBytes);
+    } catch (e2) {
+      // どちらも失敗した場合は最初のエラーを投げる
+      throw firstError || e2;
+    }
   }
 
   // 新SDK では Operation オブジェクトをそのまま渡すのが正しい
