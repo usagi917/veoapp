@@ -15,11 +15,21 @@ async function blobToDataUrl(b: Blob): Promise<string> {
 export default function SimplePage() {
   const [image, setImage] = React.useState<Blob | null>(null);
   const [text, setText] = React.useState('');
+  const [apiKey, setApiKey] = React.useState('');
   const [error, setError] = React.useState<string | null>(null);
   const [isGenerating, setIsGenerating] = React.useState(false);
   const [isComplete, setIsComplete] = React.useState(false);
   const [handle, setHandle] = React.useState<string | null>(null);
   const [downloadMsg, setDownloadMsg] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    try {
+      const v = localStorage.getItem('apiKey') ?? '';
+      if (typeof v === 'string') setApiKey(v);
+    } catch {
+      // noop
+    }
+  }, []);
 
   async function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     setError(null);
@@ -40,6 +50,7 @@ export default function SimplePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          apiKey,
           image: dataUrl,
           script: text.trim(),
           lengthSec: 8,
@@ -104,6 +115,25 @@ export default function SimplePage() {
       <h1 style={{ margin: 0, marginBottom: 12 }}>Veo3 シンプル生成</h1>
       <div style={{ display: 'grid', gap: 12 }}>
         <div>
+          <label htmlFor="apiKey">APIキー</label>
+          <input
+            id="apiKey"
+            type="password"
+            placeholder="sk-..."
+            value={apiKey}
+            onChange={(e) => {
+              const v = e.currentTarget.value;
+              setApiKey(v);
+              try {
+                localStorage.setItem('apiKey', v);
+              } catch {
+                // noop
+              }
+            }}
+            style={{ width: '100%' }}
+          />
+        </div>
+        <div>
           <label htmlFor="photo">写真</label>
           <input id="photo" type="file" accept="image/*" onChange={onFileChange} />
         </div>
@@ -119,7 +149,11 @@ export default function SimplePage() {
           />
         </div>
         <div>
-          <button type="button" onClick={onGenerate} disabled={isGenerating || !text.trim()}>
+          <button
+            type="button"
+            onClick={onGenerate}
+            disabled={isGenerating || !text.trim() || !apiKey.trim()}
+          >
             生成
           </button>
         </div>
@@ -150,4 +184,3 @@ export default function SimplePage() {
     </div>
   );
 }
-
