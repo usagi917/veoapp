@@ -1,6 +1,8 @@
 // biome-ignore assist/source/organizeImports: manual import order preferred
 import { GoogleGenAI } from '@google/genai/node'
 export const dynamic = 'force-dynamic'
+// sharp を利用するため Node.js ランタイムを明示
+export const runtime = 'nodejs'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 
@@ -28,7 +30,7 @@ export async function POST(request: NextRequest) {
 
     // Parse Data URL and determine mimeType robustly
     const dataUrlMatch = /^data:([^;]*);base64,(.*)$/.exec(image)
-    const base64Data = dataUrlMatch?.[2] ?? image.split(',')[1]
+    let base64Data = dataUrlMatch?.[2] ?? image.split(',')[1]
     let mimeType = bodyMimeType || dataUrlMatch?.[1]
 
     if (!base64Data) {
@@ -39,13 +41,30 @@ export async function POST(request: NextRequest) {
     }
 
     // Fallback: inspect first bytes to guess mime
-    const buffer = Buffer.from(base64Data, 'base64')
+    let buffer: Buffer | Uint8Array = Buffer.from(base64Data, 'base64')
     if (!mimeType || mimeType === '' || mimeType === 'application/octet-stream') {
       const header = buffer.subarray(0, 12)
       const isPng = header[0] === 0x89 && header[1] === 0x50 && header[2] === 0x4E && header[3] === 0x47
       const isJpeg = header[0] === 0xFF && header[1] === 0xD8
-      const isHeic = header.includes(0x66) && header.includes(0x74) && header.includes(0x79) && header.includes(0x70) // 'ftyp'
-      mimeType = isPng ? 'image/png' : isJpeg ? 'image/jpeg' : isHeic ? 'image/heic' : 'image/jpeg'
+      // 'ftyp' を含む ISO-BMFF（HEIC/HEIF）の簡易検出
+      const isIsoBmff = header.includes(0x66) && header.includes(0x74) && header.includes(0x79) && header.includes(0x70)
+      mimeType = isPng ? 'image/png' : isJpeg ? 'image/jpeg' : isIsoBmff ? 'image/heic' : 'image/jpeg'
+    }
+
+    // HEIC/HEIF の場合は JPEG に変換（Gemini の互換性確保）
+    const looksLikeHeic = /image\/(heic|heif)/i.test(mimeType || '')
+    if (looksLikeHeic) {
+      try {
+        const sharp = (await import('sharp')).default
+        const converted = await sharp(buffer as Buffer).jpeg({ quality: 90 }).toBuffer()
+        buffer = converted
+        base64Data = converted.toString('base64')
+        mimeType = 'image/jpeg'
+        console.log('Converted HEIC/HEIF to JPEG for compatibility')
+      } catch (e) {
+        console.error('HEIC -> JPEG 変換に失敗:', e)
+        throw new Error('HEIC画像の変換に失敗しました。サーバーに sharp を導入してください。')
+      }
     }
 
     // Enhanced prompt with aspect ratio and quality settings

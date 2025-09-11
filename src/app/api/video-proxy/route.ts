@@ -33,8 +33,8 @@ export async function GET(request: NextRequest) {
 
     // 上流に付与するヘッダーを構築（Range 転送 + 必要に応じて API キー）
     const upstreamHeaders: Record<string, string> = {}
-    if (range) upstreamHeaders['Range'] = range
-    upstreamHeaders['Accept'] = '*/*'
+    if (range) upstreamHeaders.Range = range
+    upstreamHeaders.Accept = '*/*'
 
     // Google Generative Language の files:download は API キーが必要
     if (isGenerativeFilesDownload) {

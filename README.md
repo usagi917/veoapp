@@ -61,7 +61,7 @@ A beautiful, modern web application that transforms your images into amazing vid
 
 ## 🎨 How to Use
 
-1. **Upload an Image**: Click the upload area and select an image (PNG, JPG, HEIC up to 20MB). Note: HEIC preview may not display in some browsers but upload works.
+1. **Upload an Image**: Click the upload area and select an image (PNG, JPG, HEIC up to 20MB). Note: HEIC preview may not display in some browsers but upload works. Server converts HEIC/HEIF to JPEG automatically (requires `sharp`).
 2. **Write Your Prompt**: Describe what you want to happen in the video
 3. **Choose Aspect Ratio**: Select 16:9 for landscape or 9:16 for portrait
 4. **Generate Video**: Click the "Generate Video" button and wait for the magic!
@@ -83,6 +83,14 @@ A beautiful, modern web application that transforms your images into amazing vid
 - **Icons**: Lucide React
 - **Notifications**: React Hot Toast
 - **Deployment**: Vercel-ready
+
+## 📷 HEIC/HEIF 対応について
+
+- iPhone などの HEIC/HEIF 画像はサーバー側で JPEG に変換してから動画生成に利用します。
+- 変換には `sharp` を使用します。依存をインストールしていない場合は追加してください。
+  - `pnpm add sharp`（または `npm i sharp`）
+- ルートハンドラ `/api/generate-video` は Node.js ランタイムで動作します（`export const runtime = 'nodejs'`）。
+- ブラウザによっては HEIC のプレビュー表示はできませんが、アップロードと変換は正常に行われます。
 
 ## 📦 Project Structure
 
@@ -140,4 +148,3 @@ This app is ready to deploy on Vercel:
 ## 📄 License
 
 This project is open source and available under the MIT License.
-
