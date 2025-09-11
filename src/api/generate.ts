@@ -61,12 +61,13 @@ export async function generateVideoInBrowser(args: {
   let GoogleAI: any;
   try {
     const mod: any = await import('@google/genai');
-    GoogleAI = mod.GoogleAI || mod.GoogleGenerativeAI || mod.default;
+    // 新SDKは GoogleGenAI をエクスポート
+    GoogleAI = mod.GoogleGenAI || mod.GoogleAI || mod.GoogleGenerativeAI || mod.default;
   } catch (e) {
     // フォールバック（将来のパッケージ名差異に備える）。
     try {
       const mod2: any = await import('@google/generative-ai');
-      GoogleAI = mod2.GoogleAI || mod2.GoogleGenerativeAI || mod2.default;
+      GoogleAI = mod2.GoogleGenAI || mod2.GoogleAI || mod2.GoogleGenerativeAI || mod2.default;
     } catch {
       /* noop */
     }
@@ -89,8 +90,10 @@ export async function generateVideoInBrowser(args: {
     throw new Error('genai_generate_not_supported');
   }
 
+  // 新SDK では Operation オブジェクトをそのまま渡すのが正しい
   const operationName: string = op?.operation || op?.operationName || op?.name;
-  if (!operationName) throw new Error('operation_name_missing');
+  const operationRef: any = op && (op.name || op.operation || op.operationName) ? op : operationName;
+  if (!operationRef) throw new Error('operation_name_missing');
 
   // 2) ポーリング（最大 ~60秒）
   const maxWaitMs = 60_000;
@@ -101,9 +104,10 @@ export async function generateVideoInBrowser(args: {
     if (!getFn) throw new Error('operations_get_not_supported');
     let st: any;
     try {
-      // 試行: オブジェクト引数 or 文字列引数
-      st = await getFn.call(ops, { operation: operationName, name: operationName });
+      // 優先: 新SDK 形式（Operation オブジェクト）
+      st = await getFn.call(ops, { operation: operationRef });
     } catch {
+      // 文字列でも受け付ける実装にフォールバック
       st = await getFn.call(ops, operationName);
     }
 
@@ -113,23 +117,31 @@ export async function generateVideoInBrowser(args: {
 
     const done = Boolean(st?.done ?? st?.response ?? fileRef);
     if (done && fileRef) {
-      // 3) ダウンロード
+      // 3) 直接URIが返ってくる場合を優先
+      if (typeof fileRef === 'string') return fileRef;
+      if (typeof fileRef?.uri === 'string') return fileRef.uri;
+
+      // それ以外の場合のみ、可能ならダウンロード（Node向けAPIのため、ブラウザでは通常未対応）
       const files = client.files || {};
       const dl = files.download || files.get || files.read;
-      if (!dl) throw new Error('files_download_not_supported');
-      let bytes: any;
-      try {
-        bytes = await dl.call(files, { file: fileRef, uri: fileRef, name: fileRef });
-      } catch {
-        bytes = await dl.call(files, fileRef);
+      if (dl) {
+        let bytes: any;
+        const candidate = fileRef?.name || fileRef?.uri || fileRef;
+        try {
+          bytes = await dl.call(files, { file: candidate, uri: candidate, name: candidate });
+        } catch {
+          bytes = await dl.call(files, candidate);
+        }
+        let u8: Uint8Array;
+        if (bytes instanceof Uint8Array) u8 = bytes;
+        else if (bytes?.arrayBuffer) u8 = new Uint8Array(await bytes.arrayBuffer());
+        else if (bytes?.data) u8 = new Uint8Array(bytes.data);
+        else u8 = new Uint8Array();
+        const blob = new Blob([u8 as unknown as BlobPart], { type: 'video/mp4' });
+        return URL.createObjectURL(blob);
       }
-      let u8: Uint8Array;
-      if (bytes instanceof Uint8Array) u8 = bytes;
-      else if (bytes?.arrayBuffer) u8 = new Uint8Array(await bytes.arrayBuffer());
-      else if (bytes?.data) u8 = new Uint8Array(bytes.data);
-      else u8 = new Uint8Array();
-      const blob = new Blob([u8 as unknown as BlobPart], { type: 'video/mp4' });
-      return URL.createObjectURL(blob);
+
+      throw new Error('files_download_not_supported');
     }
     if (Date.now() - start > maxWaitMs) throw new Error('operation_timeout');
     await sleep(3000);
