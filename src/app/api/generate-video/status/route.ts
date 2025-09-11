@@ -1,4 +1,5 @@
-import { GoogleGenAI } from '@google/genai'
+import { GoogleGenAI, GenerateVideosOperation } from '@google/genai'
+export const dynamic = 'force-dynamic'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 
@@ -25,8 +26,10 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get operation status
-    const operation = await client.operations.get(operationId)
+    // Get operation status (typed)
+    const op = new GenerateVideosOperation()
+    op.name = operationId
+    const operation = await client.operations.getVideosOperation({ operation: op })
 
     let status = 'processing'
     let progress = 50
@@ -40,10 +43,11 @@ export async function GET(request: NextRequest) {
         progress = 100
       }
     } else {
-      // Estimate progress based on elapsed time
-      const metadata = operation.metadata
-      if (metadata?.createTime) {
-        const createTime = new Date(metadata.createTime).getTime()
+      // Estimate progress based on elapsed time (best-effort)
+      const metadata = operation.metadata as Record<string, unknown> | undefined
+      const createTimeStr = typeof metadata?.createTime === 'string' ? metadata.createTime : undefined
+      if (createTimeStr) {
+        const createTime = new Date(createTimeStr).getTime()
         const now = Date.now()
         const elapsed = now - createTime
         const estimatedTotal = 5 * 60 * 1000 // 5 minutes estimated
