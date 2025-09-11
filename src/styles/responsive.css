@@ -1,0 +1,59 @@
+/* Responsive Design CSS */
+@media (max-width: 768px) {
+  /* Mobile styles */
+  .hero-title {
+    font-size: 32px !important;
+  }
+  
+  .hero-subtitle {
+    font-size: 16px !important;
+  }
+  
+  .card-container {
+    padding: 16px !important;
+  }
+  
+  .gradient-bg {
+    padding: 24px 0 !important;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  /* Tablet styles */
+  .hero-title {
+    font-size: 40px !important;
+  }
+}
+
+@media (min-width: 1025px) {
+  /* Desktop styles */
+  .gradient-bg {
+    padding: 48px 0 !important;
+  }
+}
+
+/* Focus states for accessibility */
+.accessible-focus:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .card {
+    border: 2px solid #000;
+  }
+  
+  .button {
+    border: 2px solid currentColor;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

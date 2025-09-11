@@ -1,4 +1,5 @@
 import React from 'react';
+import { Container, Card, Input, Textarea, Button, Alert, Progress } from '../components/ui';
 
 type GenResponse = { ops?: string[] };
 type OpResponse = { done?: boolean; handle?: string };
@@ -111,77 +112,244 @@ export default function SimplePage() {
     }
   }
 
+  const getProgressValue = () => {
+    if (isComplete) return 3;
+    if (isGenerating) return 2;
+    return 1;
+  };
+
+  const getProgressStatus = () => {
+    if (isComplete) return '生成完了！動画の準備ができました';
+    if (isGenerating) return '動画を生成中です...';
+    return '生成の準備完了';
+  };
+
+  const keyIcon = (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <title>API Key Icon</title>
+      <path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/>
+      <path d="m21 2-9.6 9.6"/>
+      <circle cx="7.5" cy="15.5" r="5.5"/>
+    </svg>
+  );
+
+  const photoIcon = (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <title>Photo Icon</title>
+      <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+      <circle cx="12" cy="13" r="3"/>
+    </svg>
+  );
+
+  const downloadIcon = (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <title>Download Icon</title>
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <polyline points="7,10 12,15 17,10"/>
+      <line x1="12" y1="15" x2="12" y2="3"/>
+    </svg>
+  );
+
   return (
-    <div style={{ maxWidth: 720, margin: '0 auto', padding: 24 }}>
-      <h1 style={{ margin: 0, marginBottom: 12 }}>Veo3 シンプル生成</h1>
-      <div style={{ display: 'grid', gap: 12 }}>
-        <div>
-          <label htmlFor="apiKey">APIキー</label>
-          <input
-            id="apiKey"
-            type="password"
-            placeholder="sk-..."
-            value={apiKey}
-            onChange={(e) => {
-              const v = e.currentTarget.value;
-              setApiKey(v);
-              try {
-                localStorage.setItem('apiKey', v);
-              } catch {
-                // noop
-              }
-            }}
-            style={{ width: '100%' }}
-          />
-        </div>
-        <div>
-          <label htmlFor="photo">写真</label>
-          <input id="photo" type="file" accept="image/*" onChange={onFileChange} />
-        </div>
-        <div>
-          <label htmlFor="idea">イメージ</label>
-          <textarea
-            id="idea"
-            value={text}
-            onChange={(e) => setText(e.currentTarget.value)}
-            rows={3}
-            style={{ width: '100%' }}
-            placeholder="どんな動画にしたいか日本語で書いてください"
-          />
-        </div>
-        <div>
-          <button
-            type="button"
-            onClick={onGenerate}
-            disabled={isGenerating || !text.trim() || !apiKey.trim()}
-          >
-            生成
-          </button>
+    <div className="gradient-bg" style={{ 
+      minHeight: '100vh', 
+      background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+      padding: '32px 0',
+    }}>
+      <Container maxWidth="md">
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <h1 className="hero-title" style={{ 
+            fontSize: '36px',
+            fontWeight: '700',
+            color: '#ffffff',
+            margin: '0 0 12px 0',
+            fontFamily: 'system-ui, -apple-system, sans-serif',
+            textShadow: '0 2px 4px rgba(0,0,0,0.1)',
+          }}>
+            Veo 3 シンプル生成
+          </h1>
+          <p className="hero-subtitle" style={{
+            fontSize: '16px',
+            color: '#e0e7ff',
+            margin: 0,
+            fontFamily: 'system-ui, -apple-system, sans-serif',
+          }}>
+            高度な設定で本格的な動画を生成
+          </p>
         </div>
 
-        {error && (
-          <div role="alert" style={{ color: '#b00020' }}>
-            {error}
+        <Card variant="elevated" padding="lg">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <Input
+              label="APIキー"
+              type="password"
+              placeholder="sk-..."
+              value={apiKey}
+              onChange={(e) => {
+                const v = e.currentTarget.value;
+                setApiKey(v);
+                try {
+                  localStorage.setItem('apiKey', v);
+                } catch {
+                  // noop
+                }
+              }}
+              icon={keyIcon}
+              size="md"
+            />
+
+            <div>
+              <label htmlFor="photo-upload" style={{
+                display: 'block',
+                fontSize: '14px',
+                fontWeight: '500',
+                color: '#374151',
+                marginBottom: '6px',
+                fontFamily: 'system-ui, -apple-system, sans-serif',
+              }}>
+                写真をアップロード
+              </label>
+              <div style={{
+                border: '2px dashed #d1d5db',
+                borderRadius: '8px',
+                padding: '24px',
+                textAlign: 'center',
+                backgroundColor: image ? '#f0fdf4' : '#f9fafb',
+                transition: 'all 0.2s ease-in-out',
+                cursor: 'pointer',
+              }}>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={onFileChange}
+                  style={{ display: 'none' }}
+                  id="photo-upload"
+                />
+                <label 
+                  htmlFor="photo-upload" 
+                  style={{ 
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <div style={{ color: image ? '#059669' : '#9ca3af' }}>
+                    {photoIcon}
+                  </div>
+                  <span style={{
+                    fontSize: '14px',
+                    color: image ? '#059669' : '#6b7280',
+                    fontFamily: 'system-ui, -apple-system, sans-serif',
+                  }}>
+                    {image ? `選択済み: ${(image as File).name}` : 'クリックして写真を選択'}
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <Textarea
+              label="動画のイメージ"
+              value={text}
+              onChange={(e) => setText(e.currentTarget.value)}
+              placeholder="どんな動画にしたいか日本語で詳しく書いてください"
+              size="md"
+              rows={3}
+            />
+
+            <Button
+              onClick={onGenerate}
+              disabled={isGenerating || !text.trim() || !apiKey.trim()}
+              loading={isGenerating}
+              size="md"
+              style={{ width: '100%' }}
+            >
+              {isGenerating ? '生成中...' : '動画を生成'}
+            </Button>
+
+            {error && (
+              <Alert variant="error">
+                {error}
+              </Alert>
+            )}
+
+            <Card variant="outlined" padding="md">
+              <h3 style={{
+                fontSize: '16px',
+                fontWeight: '600',
+                color: '#374151',
+                marginBottom: '12px',
+                fontFamily: 'system-ui, -apple-system, sans-serif',
+              }}>
+                生成ステータス
+              </h3>
+              <Progress
+                value={getProgressValue()}
+                max={3}
+                color={isComplete ? 'success' : isGenerating ? 'primary' : 'warning'}
+                showLabel={false}
+              />
+              <p style={{
+                fontSize: '14px',
+                color: '#6b7280',
+                marginTop: '8px',
+                fontFamily: 'system-ui, -apple-system, sans-serif',
+              }}>
+                {getProgressStatus()}
+              </p>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                marginTop: '12px',
+                fontSize: '12px',
+                color: '#9ca3af',
+                fontFamily: 'system-ui, -apple-system, sans-serif',
+              }}>
+                <span style={{ color: getProgressValue() >= 1 ? '#10b981' : '#9ca3af' }}>
+                  1. 待機
+                </span>
+                <span style={{ color: getProgressValue() >= 2 ? '#10b981' : '#9ca3af' }}>
+                  2. 生成
+                </span>
+                <span style={{ color: getProgressValue() >= 3 ? '#10b981' : '#9ca3af' }}>
+                  3. 完了
+                </span>
+              </div>
+            </Card>
+
+            {isComplete && handle && (
+              <Card variant="outlined" padding="md">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <h3 style={{
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    color: '#374151',
+                    margin: 0,
+                    fontFamily: 'system-ui, -apple-system, sans-serif',
+                  }}>
+                    動画の準備完了
+                  </h3>
+                  <Button
+                    onClick={onDownload}
+                    variant="secondary"
+                    size="md"
+                    icon={downloadIcon}
+                    style={{ alignSelf: 'flex-start' }}
+                  >
+                    ダウンロード
+                  </Button>
+                  {downloadMsg && (
+                    <Alert variant={downloadMsg.includes('成功') || downloadMsg.includes('開始') ? 'success' : 'error'}>
+                      {downloadMsg}
+                    </Alert>
+                  )}
+                </div>
+              </Card>
+            )}
           </div>
-        )}
-
-        <div>
-          <div>進行状況</div>
-          <ol>
-            <li>待機</li>
-            <li>生成</li>
-            <li>最終化</li>
-          </ol>
-          {isComplete && <div>生成完了</div>}
-        </div>
-
-        {isComplete && handle && (
-          <div>
-            <button type="button" onClick={onDownload}>ダウンロード</button>
-            {downloadMsg && <div>{downloadMsg}</div>}
-          </div>
-        )}
-      </div>
+        </Card>
+      </Container>
     </div>
   );
 }
