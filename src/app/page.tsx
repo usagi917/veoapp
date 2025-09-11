@@ -1,7 +1,7 @@
 'use client'
 
 // biome-ignore assist/source/organizeImports: manual import order preferred
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Upload, Wand2, Download, Play, Loader2, Image as ImageIcon, Film } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -20,6 +20,9 @@ export default function Home() {
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>('16:9')
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedVideo, setGeneratedVideo] = useState<string | null>(null)
+  const [generatedMime, setGeneratedMime] = useState<string | null>(null)
+  const [videoReady, setVideoReady] = useState(false)
+  const [videoError, setVideoError] = useState<string | null>(null)
   const [steps, setSteps] = useState<GenerationStep[]>([
     { id: 'upload', label: '画像のアップロード', status: 'pending' },
     { id: 'processing', label: 'AI 処理', status: 'pending' },
@@ -73,6 +76,19 @@ export default function Home() {
     ))
   }
 
+  const inferMimeFromUrl = (url: string | null): string | null => {
+    if (!url) return null
+    // data URL の先頭を解析
+    if (url.startsWith('data:')) {
+      const match = /^data:([^;]+);/i.exec(url)
+      return match?.[1] ?? null
+    }
+    // 拡張子からの推測（簡易）
+    if (/\.webm(\?|#|$)/i.test(url)) return 'video/webm'
+    if (/\.(mp4|m4v)(\?|#|$)/i.test(url)) return 'video/mp4'
+    return null
+  }
+
   const generateVideo = async () => {
     if (!selectedImage || !prompt.trim()) {
       toast.error('画像をアップロードし、説明文を入力してください')
@@ -81,6 +97,9 @@ export default function Home() {
 
     setIsGenerating(true)
     setGeneratedVideo(null)
+    setGeneratedMime(null)
+    setVideoReady(false)
+    setVideoError(null)
     
     try {
       updateStepStatus('processing', 'active')
@@ -112,6 +131,9 @@ export default function Home() {
           image: base64Image,
           prompt: prompt.trim(),
           aspectRatio,
+          mimeType: (selectedImage.type && selectedImage.type !== '')
+            ? selectedImage.type
+            : (/\.(heic|heif)$/i.test(selectedImage.name) ? 'image/heic' : undefined),
         }),
       })
 
@@ -120,12 +142,13 @@ export default function Home() {
         throw new Error(errorData.error || 'Failed to generate video')
       }
 
-      const data = await response.json()
+      const data = await response.json() as { videoUrl: string | null; mimeType?: string | null }
       
       updateStepStatus('generation', 'completed')
       updateStepStatus('complete', 'completed')
       
       setGeneratedVideo(data.videoUrl)
+      setGeneratedMime(data.mimeType ?? inferMimeFromUrl(data.videoUrl))
       toast.success('動画の生成が完了しました 🎉')
       
     } catch (error) {
@@ -149,6 +172,12 @@ export default function Home() {
     document.body.removeChild(link)
     toast.success('動画のダウンロードを開始しました 📥')
   }
+
+  useEffect(() => {
+    // 新しい動画がセットされたら、準備状態をリセット
+    setVideoReady(false)
+    setVideoError(null)
+  }, [])
 
   const resetForm = () => {
     setSelectedImage(null)
@@ -243,10 +272,18 @@ export default function Home() {
                 className="hidden"
               />
               
-              <button
-                type="button"
+              {/** biome-ignore lint/a11y/useSemanticElements: upload area needs custom styling */}
+              <div
+                role="button"
+                tabIndex={0}
                 className="upload-area w-full text-left"
                 onClick={() => fileInputRef.current?.click()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    fileInputRef.current?.click()
+                  }
+                }}
                 aria-label="画像をアップロード"
               >
                 {selectedImage ? (
@@ -256,17 +293,26 @@ export default function Home() {
                         このブラウザでは HEIC プレビューに対応していませんが、
                         画像はアップロードされています。
                       </div>
-                      <button
-                        type="button"
+                      {/** biome-ignore lint/a11y/useSemanticElements: reset form button */}
+                      <div
+                        role="button"
+                        tabIndex={0}
                         onClick={(e) => {
                           e.stopPropagation()
                           resetForm()
                         }}
-                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            resetForm()
+                          }
+                        }}
+                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600 cursor-pointer"
                         aria-label="画像を削除"
                       >
                         ×
-                      </button>
+                      </div>
                     </div>
                   ) : imagePreview ? (
                     <div className="relative">
@@ -277,17 +323,26 @@ export default function Home() {
                         alt="アップロードプレビュー" 
                         className="max-h-64 mx-auto rounded-lg shadow-lg"
                       />
-                      <button
-                        type="button"
+                      {/** biome-ignore lint/a11y/useSemanticElements: reset form button */}
+                      <div
+                        role="button"
+                        tabIndex={0}
                         onClick={(e) => {
                           e.stopPropagation()
                           resetForm()
                         }}
-                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            resetForm()
+                          }
+                        }}
+                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600 cursor-pointer"
                         aria-label="画像を削除"
                       >
                         ×
-                      </button>
+                      </div>
                     </div>
                   ) : (
                     <div>
@@ -303,7 +358,7 @@ export default function Home() {
                     <p className="text-sm text-gray-400">PNG, JPG, HEIC（最大 20MB）</p>
                   </div>
                 )}
-              </button>
+              </div>
             </div>
 
             {/* Text Prompt */}
@@ -382,21 +437,46 @@ export default function Home() {
             
             {generatedVideo ? (
               <div className="space-y-4">
+                {/** biome-ignore lint/a11y/useMediaCaption: video caption */}
                 <video
                   ref={videoRef}
-                  src={generatedVideo}
                   controls
+                  preload="metadata"
+                  crossOrigin="anonymous"
                   className="w-full rounded-xl shadow-lg"
                   style={{ aspectRatio: aspectRatio === '16:9' ? '16/9' : '9/16' }}
+                  onLoadedData={() => setVideoReady(true)}
+                  onCanPlay={() => setVideoReady(true)}
+                  onError={() => {
+                    setVideoError('動画を再生できません（未対応の形式または読み込み失敗）')
+                    setVideoReady(false)
+                    toast.error('動画の読み込みに失敗しました')
+                  }}
                 >
-                  <track kind="captions" src="" label="日本語" default />
+                  {/* ソースを明示し、ブラウザの判定を助ける */}
+                  <source src={generatedVideo} type={generatedMime || undefined} />
                   お使いのブラウザは video タグに対応していません。
                 </video>
+                {videoError && (
+                  <p className="text-sm text-red-600">{videoError}</p>
+                )}
                 
                 <div className="flex gap-3">
                   <button
                     type="button"
-                    onClick={() => videoRef.current?.play()}
+                    onClick={() => {
+                      const v = videoRef.current
+                      if (!v) return
+                      // 準備できていない/サポートされない場合の安全なガード
+                      if (!videoReady || v.readyState < v.HAVE_CURRENT_DATA) {
+                        toast.error('動画がまだ読み込まれていません')
+                        return
+                      }
+                      v.play().catch(() => {
+                        toast.error('再生に失敗しました')
+                      })
+                    }}
+                    disabled={!videoReady}
                     className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
                   >
                     <Play className="w-4 h-4" />

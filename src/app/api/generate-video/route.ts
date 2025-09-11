@@ -8,7 +8,7 @@ const client = new GoogleGenAI({
 
 export async function POST(request: NextRequest) {
   try {
-    const { image, prompt, aspectRatio } = await request.json()
+    const { image, prompt, aspectRatio, mimeType: bodyMimeType } = await request.json()
 
     if (!image || !prompt) {
       return NextResponse.json(
@@ -24,21 +24,27 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Convert base64 image to blob for upload
-    const base64Data = image.split(',')[1]
-    const mimeType = image.split(';')[0].split(':')[1]
+    // Parse Data URL and determine mimeType robustly
+    const dataUrlMatch = /^data:([^;]*);base64,(.*)$/.exec(image)
+    const base64Data = dataUrlMatch?.[2] ?? image.split(',')[1]
+    let mimeType = bodyMimeType || dataUrlMatch?.[1]
+
+    if (!base64Data) {
+      return NextResponse.json(
+        { error: 'Invalid image payload' },
+        { status: 400 }
+      )
+    }
+
+    // Fallback: inspect first bytes to guess mime
     const buffer = Buffer.from(base64Data, 'base64')
-
-    // Upload image to Files API first
-    const uploadedFile = await client.files.upload({
-      file: {
-        data: buffer,
-        mimeType: mimeType
-      },
-      displayName: `input-image-${Date.now()}`
-    })
-
-    console.log('Image uploaded:', uploadedFile.file.name)
+    if (!mimeType || mimeType === '' || mimeType === 'application/octet-stream') {
+      const header = buffer.subarray(0, 12)
+      const isPng = header[0] === 0x89 && header[1] === 0x50 && header[2] === 0x4E && header[3] === 0x47
+      const isJpeg = header[0] === 0xFF && header[1] === 0xD8
+      const isHeic = header.includes(0x66) && header.includes(0x74) && header.includes(0x79) && header.includes(0x70) // 'ftyp'
+      mimeType = isPng ? 'image/png' : isJpeg ? 'image/jpeg' : isHeic ? 'image/heic' : 'image/jpeg'
+    }
 
     // Enhanced prompt with aspect ratio and quality settings
     const enhancedPrompt = `${prompt}. Create a high-quality 8-second video with smooth motion and realistic details. Aspect ratio: ${aspectRatio}.`
@@ -48,8 +54,18 @@ export async function POST(request: NextRequest) {
     // Generate video using Veo 3
     let operation = await client.models.generateVideos({
       model: 'veo-3.0-generate-001',
-      prompt: enhancedPrompt,
-      image: uploadedFile.file
+      source: {
+        prompt: enhancedPrompt,
+        image: {
+          imageBytes: base64Data,
+          mimeType,
+        },
+      },
+      config: {
+        numberOfVideos: 1,
+        durationSeconds: 8,
+        aspectRatio,
+      },
     })
 
     console.log('Video generation started, operation ID:', operation.name)
@@ -63,7 +79,7 @@ export async function POST(request: NextRequest) {
       await new Promise(resolve => setTimeout(resolve, 10000)) // Wait 10 seconds
       
       operation = await client.operations.getVideosOperation({
-        operation: operation
+        operation: operation,
       })
       
       attempts++
@@ -78,30 +94,31 @@ export async function POST(request: NextRequest) {
     }
 
     // Download the generated video
-    const generatedVideo = operation.response.generatedVideos[0]
-    
-    // Create a temporary URL for the video
-    const videoData = await client.files.download({
-      file: generatedVideo.video
-    })
+    const generatedVideo = operation.response?.generatedVideos?.[0]
+    if (!generatedVideo) {
+      throw new Error('No generated video returned from the operation')
+    }
 
-    // Convert to base64 for client-side handling
-    const videoBase64 = `data:video/mp4;base64,${Buffer.from(videoData).toString('base64')}`
+    // Build a client-usable video URL
+    let videoUrl: string | null = null
+    const v = generatedVideo.video
+    if (v?.videoBytes) {
+      const outMime = v.mimeType || 'video/mp4'
+      videoUrl = `data:${outMime};base64,${v.videoBytes}`
+    } else if (v?.uri) {
+      videoUrl = v.uri
+    }
 
     console.log('Video generation completed successfully')
 
-    // Clean up uploaded image
-    try {
-      await client.files.delete({ file: uploadedFile.file })
-    } catch (cleanupError) {
-      console.warn('Failed to cleanup uploaded image:', cleanupError)
-    }
+    // No temporary uploads used; nothing to clean up
 
     return NextResponse.json({
-      videoUrl: videoBase64,
+      videoUrl,
+      mimeType: v?.mimeType || (videoUrl?.startsWith('data:') ? (videoUrl.split(':')[1]?.split(';')[0] || null) : null),
       status: 'completed',
       duration: 8,
-      aspectRatio: aspectRatio
+      aspectRatio: aspectRatio,
     })
 
   } catch (error) {
@@ -116,6 +133,10 @@ export async function POST(request: NextRequest) {
         errorMessage = 'API quota exceeded. Please try again later.'
       } else if (error.message.includes('safety')) {
         errorMessage = 'Content was blocked by safety filters. Please try a different prompt.'
+      } else if (error.message.toLowerCase().includes('mime') || error.message.toLowerCase().includes('mimetype')) {
+        errorMessage = 'Can not determine mimeType. Please provide mimeType in the config.'
+      } else if (error.message.toLowerCase().includes('not supported') || error.message.toLowerCase().includes('update @google/genai')) {
+        errorMessage = '現在の SDK では動画生成 API が未対応です。@google/genai のアップデートをご検討ください。'
       } else {
         errorMessage = error.message
       }

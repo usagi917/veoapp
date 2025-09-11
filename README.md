@@ -141,10 +141,3 @@ This app is ready to deploy on Vercel:
 
 This project is open source and available under the MIT License.
 
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
----
-
-Made with 💜 using Google's Veo 3 AI model
