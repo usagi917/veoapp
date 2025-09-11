@@ -1,4 +1,5 @@
-import { GoogleGenAI } from '@google/genai'
+// biome-ignore assist/source/organizeImports: manual import order preferred
+import { GoogleGenAI } from '@google/genai/node'
 export const dynamic = 'force-dynamic'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
@@ -54,7 +55,7 @@ export async function POST(request: NextRequest) {
 
     // Generate video using Veo 3
     let operation = await client.models.generateVideos({
-      model: 'veo-3.0-generate-001',
+      model: 'veo-3.0-fast-generate-001', // veo-3.0-generate-001
       source: {
         prompt: enhancedPrompt,
         image: {

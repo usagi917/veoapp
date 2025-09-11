@@ -216,29 +216,29 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen py-12 px-6">
+    <div className="min-h-screen py-8 px-4 sm:py-12 sm:px-6">
       <div className="max-w-5xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-16">
+        <div className="text-center mb-10 sm:mb-16">
           <div className="flex items-center justify-center gap-4 mb-6">
-            <div className="w-14 h-14 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
-              <Film className="w-7 h-7 text-white" />
+            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+              <Film className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
             </div>
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+            <h1 className="text-3xl sm:text-5xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
               動画生成AI
             </h1>
           </div>
-          <p className="text-slate-400 text-xl font-light">
+          <p className="text-slate-400 text-base sm:text-xl font-light">
             AI で画像を魅力的な動画に変換
           </p>
         </div>
 
         {/* Progress Steps */}
         {(selectedImage || isGenerating) && (
-          <div className="modern-card p-8 mb-12">
-            <div className="flex items-center justify-between">
+          <div className="modern-card p-6 sm:p-8 mb-12">
+            <div className="flex items-center sm:justify-between gap-4 overflow-x-auto no-scrollbar -mx-2 px-2 flex-nowrap">
               {steps.map((step, index) => (
-                <div key={step.id} className="flex items-center">
+                <div key={step.id} className="flex items-center flex-shrink-0">
                   <div className={`progress-step ${
                     step.status === 'completed' 
                       ? 'step-completed' 
@@ -267,7 +267,7 @@ export default function Home() {
                     {step.label}
                   </span>
                   {index < steps.length - 1 && (
-                    <div className={`w-20 h-0.5 mx-6 rounded-full transition-all duration-300 ${
+                    <div className={`w-12 sm:w-16 md:w-20 h-0.5 mx-4 sm:mx-6 rounded-full transition-all duration-300 ${
                       steps[index + 1].status === 'completed' || steps[index + 1].status === 'active'
                         ? 'bg-gradient-to-r from-indigo-500 to-purple-500'
                         : 'bg-slate-700'
@@ -279,11 +279,11 @@ export default function Home() {
           </div>
         )}
 
-        <div className="grid lg:grid-cols-2 gap-8">
+        <div className="grid lg:grid-cols-2 gap-6 lg:gap-8">
           {/* Input Section */}
           <div className="space-y-8">
             {/* Image Upload */}
-            <div className="modern-card p-8">
+            <div className="modern-card p-6 sm:p-8">
               <h2 className="text-xl font-semibold mb-6 flex items-center gap-3 text-slate-200">
                 <ImageIcon className="w-6 h-6 text-indigo-400" />
                 画像をアップロード
@@ -346,7 +346,7 @@ export default function Home() {
                       <img 
                         src={imagePreview} 
                         alt="アップロードプレビュー" 
-                        className="max-h-64 mx-auto rounded-2xl shadow-2xl"
+                        className="max-h-64 max-w-full mx-auto rounded-2xl shadow-2xl"
                       />
                       {/** biome-ignore lint/a11y/useSemanticElements: reset form button */}
                       <div
@@ -371,14 +371,14 @@ export default function Home() {
                     </div>
                   ) : (
                     <div className="py-4">
-                      <Upload className="w-14 h-14 mx-auto mb-6 text-indigo-400" />
+                      <Upload className="w-12 h-12 sm:w-14 sm:h-14 mx-auto mb-6 text-indigo-400" />
                       <p className="text-slate-300 mb-3 font-medium">クリックして画像をアップロード</p>
                       <p className="text-sm text-slate-500">PNG, JPG, HEIC（最大 20MB）</p>
                     </div>
                   )
                 ) : (
                   <div className="py-4">
-                    <Upload className="w-14 h-14 mx-auto mb-6 text-indigo-400" />
+                    <Upload className="w-12 h-12 sm:w-14 sm:h-14 mx-auto mb-6 text-indigo-400" />
                     <p className="text-slate-300 mb-3 font-medium">クリックして画像をアップロード</p>
                     <p className="text-sm text-slate-500">PNG, JPG, HEIC（最大 20MB）</p>
                   </div>
@@ -387,7 +387,7 @@ export default function Home() {
             </div>
 
             {/* Text Prompt */}
-            <div className="modern-card p-8">
+            <div className="modern-card p-6 sm:p-8">
               <h2 className="text-xl font-semibold mb-6 flex items-center gap-3 text-slate-200">
                 <Wand2 className="w-6 h-6 text-indigo-400" />
                 動画の説明
@@ -399,14 +399,14 @@ export default function Home() {
                 className="w-full h-36 p-5 bg-slate-800/50 border border-slate-600 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none text-slate-100 placeholder-slate-400 transition-all duration-300"
                 disabled={isGenerating}
               />
-              <div className="mt-3 text-sm text-slate-500 flex justify-between">
+              <div className="mt-3 text-xs sm:text-sm text-slate-500 flex justify-between">
                 <span>動画の内容を詳細に記述してください</span>
                 <span>{prompt.length}/1024 文字</span>
               </div>
             </div>
 
             {/* Aspect Ratio */}
-            <div className="modern-card p-8">
+            <div className="modern-card p-6 sm:p-8">
               <h2 className="text-xl font-semibold mb-6 text-slate-200">アスペクト比</h2>
               <div className="grid grid-cols-2 gap-6">
                 {(['16:9', '9:16'] as AspectRatio[]).map((ratio) => (
@@ -455,7 +455,7 @@ export default function Home() {
           </div>
 
           {/* Preview Section */}
-          <div className="modern-card p-8">
+          <div className="modern-card p-6 sm:p-8">
             <h2 className="text-xl font-semibold mb-6 flex items-center gap-3 text-slate-200">
               <Play className="w-6 h-6 text-indigo-400" />
               動画プレビュー
@@ -487,7 +487,7 @@ export default function Home() {
                   <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl p-3">{videoError}</p>
                 )}
                 
-                <div className="flex gap-4">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                   <button
                     type="button"
                     onClick={() => {

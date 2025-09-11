@@ -1,7 +1,7 @@
-import { GoogleGenAI, GenerateVideosOperation } from '@google/genai'
-export const dynamic = 'force-dynamic'
+import { GoogleGenAI, GenerateVideosOperation } from '@google/genai/node'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
+export const dynamic = 'force-dynamic'
 
 const client = new GoogleGenAI({
   apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY || ''

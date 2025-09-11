@@ -22,11 +22,11 @@
   }
   
   .upload-area {
-    @apply border-2 border-dashed border-slate-600 hover:border-indigo-400 rounded-2xl p-8 text-center transition-all duration-300 cursor-pointer bg-slate-800/30 hover:bg-slate-700/50;
+    @apply border-2 border-dashed border-slate-600 hover:border-indigo-400 rounded-2xl p-6 sm:p-8 text-center transition-all duration-300 cursor-pointer bg-slate-800/30 hover:bg-slate-700/50;
   }
   
   .progress-step {
-    @apply flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-300;
+    @apply flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full border-2 transition-all duration-300;
   }
   
   .step-active {
@@ -55,5 +55,16 @@
   
   .aspect-ratio-inactive {
     @apply border-slate-700 hover:border-slate-600 bg-slate-800/50 text-slate-300;
+  }
+}
+
+@layer utilities {
+  /* モバイルで進捗ステップを横スクロールさせる際にスクロールバーを隠す */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
   }
 }
