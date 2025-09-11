@@ -1,93 +1,150 @@
-Pictalk — しゃべる写真の動画ジェネレーター（MVP）
+# 🎬 Veo Video Generator
 
-このリポジトリは、1枚の人物写真から日本語セリフで口パク＋まばたきする短尺動画（8秒/16秒）を生成・ダウンロードするWebアプリのMVP実装です。
+A beautiful, modern web application that transforms your images into amazing videos using Google's Veo 3 AI model.
 
-- フロントエンド: React + Vite + TypeScript
-- テスト: Vitest + React Testing Library（単体/結合）、Playwright（E2E）
-- 品質: ESLint + Prettier + TypeScript 型チェック
-- 方針: BYOK（ユーザー自身の Google Gemini API キーを一時セッション保持）
+## ✨ Features
 
-## 必要環境
+- **Image to Video**: Upload any image and transform it into an 8-second high-quality video
+- **Smart Prompting**: Describe what you want to happen in your video with natural language
+- **Aspect Ratio Control**: Choose between 16:9 (landscape) or 9:16 (portrait) formats
+- **Real-time Progress**: Watch the generation process with beautiful step indicators
+- **Instant Preview**: Play your generated video immediately in the browser
+- **Easy Download**: Save your videos as MP4 files with one click
+- **Error Handling**: Friendly error messages and toast notifications
+- **Responsive Design**: Works perfectly on desktop and mobile devices
 
-- Node.js 18 以上（推奨: Node 20）
-- pnpm 8+（`corepack enable` で有効化可）
+## 🚀 Quick Start
 
-## セットアップ
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd veo
+   ```
 
-1. 依存関係をインストール
+2. **Install dependencies**
+   ```bash
+   npm install
+   # or
+   pnpm install
+   # or
+   yarn install
+   ```
 
-- `pnpm install`
+3. **Set up your environment**
+   ```bash
+   cp env.example .env.local
+   ```
+   
+   Edit `.env.local` and add your Google Gemini API key:
+   ```env
+   NEXT_PUBLIC_GEMINI_API_KEY=your_gemini_api_key_here
+   ```
 
-2. 環境変数を設定（サーバー相当コードをテストする場合）
+4. **Run the development server**
+   ```bash
+   npm run dev
+   # or
+   pnpm dev
+   # or
+   yarn dev
+   ```
 
-- `.env.example` を `.env` にコピーして必要値を設定
-- `SESSION_SECRET`, `KV_URL`, `KV_TOKEN`
+5. **Open your browser**
+   Navigate to [http://localhost:3000](http://localhost:3000)
 
-3. Playwright（E2E用ブラウザ）をインストール（E2Eを実行する場合）
+## 🔑 Getting a Gemini API Key
 
-- `pnpm e2e:install`
+1. Visit the [Google AI Studio](https://aistudio.google.com/app/apikey)
+2. Sign in with your Google account
+3. Click "Create API Key"
+4. Copy your API key and add it to your `.env.local` file
 
-## よく使うコマンド
+## 🎨 How to Use
 
-- 開発サーバー起動（Vite）: `pnpm dev`
-- プレビューサーバー（本番ビルドの確認）: `pnpm exec vite build && pnpm preview`
-  - 備考: `vite preview` は本番用サーバーではなく、ローカルでビルド済み成果物（通常は `dist/`）を配信します（デフォルトポート: 4173）。
-- フォーマット: `pnpm format`
-- Lint: `pnpm lint`
-- 型チェック: `pnpm typecheck`
-- 単体/結合テスト（Vitest）: `pnpm test`
-- まとめCIラン: `pnpm codex:ci`（format → lint → typecheck → test）
+1. **Upload an Image**: Click the upload area and select an image (PNG, JPG, HEIC up to 20MB). Note: HEIC preview may not display in some browsers but upload works.
+2. **Write Your Prompt**: Describe what you want to happen in the video
+3. **Choose Aspect Ratio**: Select 16:9 for landscape or 9:16 for portrait
+4. **Generate Video**: Click the "Generate Video" button and wait for the magic!
+5. **Preview & Download**: Watch your video and download it when ready
 
-## テスト運用
+## 📝 Example Prompts
 
-- 単体/結合テスト（Vitest + RTL）
-  - 全件実行: `pnpm test`
-  - テスト名で絞り込み: `pnpm test -- -t "キーワード"`
-  - 設定: `vitest.config.ts`（`environment: 'jsdom'`）
-- E2E（Playwright）
-  - 事前準備: `pnpm exec vite build`
-  - 実行: `pnpm test:e2e`
-  - 設定: `playwright.config.ts`（`webServer: pnpm preview`, `baseURL: http://localhost:4173`）
+- "A person walking through a magical forest with sparkles and gentle wind"
+- "The camera slowly zooms into the subject while soft music plays"
+- "Rain starts falling gently on the scene with dramatic lighting"
+- "A butterfly lands on the flower and flies away gracefully"
 
-## ディレクトリ構成（抜粋）
+## 🛠️ Tech Stack
 
-- `src/app/` UI（React）
-- `src/api/` サーバー関数相当の純関数群（テストしやすい形で実装）
-- `src/lib/` ドメインロジック/ユーティリティ
-- `e2e/` Playwright E2E テスト
-- `spec.md` プロダクト仕様（MVPの要件）
-- `prompt_plan.md`, `todo.md` 開発タスク・プロンプト計画
+- **Framework**: Next.js 14 with App Router
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS with custom components
+- **AI Model**: Google Veo 3 via Gemini API
+- **Icons**: Lucide React
+- **Notifications**: React Hot Toast
+- **Deployment**: Vercel-ready
 
-## 開発方針（TDDワークフロー）
+## 📦 Project Structure
 
-AGENTS.md のルールに従い、次の順で作業します。
+```
+src/
+├── app/
+│   ├── api/
+│   │   ├── generate-video/
+│   │   │   ├── route.ts          # Main video generation endpoint
+│   │   │   └── status/
+│   │   │       └── route.ts      # Progress checking endpoint
+│   │   └── placeholder-video/
+│   │       └── route.ts          # Demo/fallback endpoint
+│   ├── globals.css               # Global styles and Tailwind config
+│   ├── layout.tsx                # Root layout with toast provider
+│   └── page.tsx                  # Main application component
+└── ...
+```
 
-1. 失敗するテストを書く（Vitest + RTL）
-2. テストに合格するコードを実装
-3. `pnpm format && pnpm lint && pnpm typecheck && pnpm test`
-4. すべて合格したらコミット
-5. `prompt_plan.md` と `todo.md` を更新
+## 🎯 Key Features Implementation
 
-Codex CLI で「go」と指示した場合、上記の未完了ステップを1つずつ自動で進めます（詳細は `AGENTS.md`）。
+### Image Upload
+- Drag & drop or click to upload
+- File type validation (images only)
+- Size limit validation (20MB max)
+- Instant preview with thumbnail
 
-## 環境変数（.env）
+### Video Generation
+- Real-time progress tracking
+- Step-by-step status updates
+- Automatic polling for completion
+- Error handling with retry logic
 
-- `SESSION_SECRET` CSRF/署名用の秘密（十分な長さの乱数）
-- `KV_URL`, `KV_TOKEN` 短寿命KVの接続情報（セッションID → APIキー、TTL=60分想定）
-- BYOKのため、Google Gemini の自前APIキーはサーバー側でのみ扱い、フロントには保存しません。
+### User Experience
+- Beautiful glassmorphism design
+- Smooth animations and transitions
+- Loading states and progress indicators
+- Responsive layout for all devices
 
-## 補足・参考
+## 🔧 API Endpoints
 
-- Vite の `preview` はビルド済み成果物をローカル配信するためのコマンドです（デフォルトポートは `4173`。本番運用向けではありません）。
-- Vitest のCLIは `-t`/`--testNamePattern` でテスト名フィルターが使えます。
-- ライセンスは `LICENSE` を参照してください。
+- `POST /api/generate-video` - Generate video from image and prompt
+- `GET /api/generate-video/status` - Check generation progress
+- `GET /api/placeholder-video` - Demo endpoint for testing
 
-## トラブルシュート
+## 🚀 Deployment
 
-- `pnpm preview` 実行時に 404 などが出る → 先に `pnpm exec vite build` を実行してください。
-- E2Eでブラウザが見つからない → `pnpm e2e:install` を実行してください。
-- Node の型や `Buffer` が見つからない → Node 18+ を使用しているか確認してください。
+This app is ready to deploy on Vercel:
+
+1. Push your code to GitHub
+2. Connect your repository to Vercel
+3. Add your `NEXT_PUBLIC_GEMINI_API_KEY` environment variable
+4. Deploy!
+
+## 📄 License
+
+This project is open source and available under the MIT License.
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ---
 
-このREADMEは、Vite/Vitestの公式ドキュメント確認に基づいて作成されています。プレビューはローカル検証専用、テスト名フィルタは `-t` が利用可能です。
+Made with 💜 using Google's Veo 3 AI model

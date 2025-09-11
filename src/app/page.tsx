@@ -1,150 +1,429 @@
-import { useEffect, useState } from 'react';
+'use client'
 
-export default function Page() {
-  const [file, setFile] = useState<File | null>(null);
-  const [text, setText] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [videoUrl, setVideoUrl] = useState<string | null>(null);
-  const [apiKey, setApiKey] = useState('');
+// biome-ignore assist/source/organizeImports: manual import order preferred
+import { useState, useRef } from 'react'
+import { Upload, Wand2, Download, Play, Loader2, Image as ImageIcon, Film } from 'lucide-react'
+import toast from 'react-hot-toast'
 
-  // 初期表示時にローカルストレージからAPIキーを復元
-  useEffect(() => {
-    try {
-      const v = localStorage.getItem('apiKey') ?? '';
-      if (typeof v === 'string') setApiKey(v);
-    } catch {
-      // noop
+type AspectRatio = '16:9' | '9:16'
+
+interface GenerationStep {
+  id: string
+  label: string
+  status: 'pending' | 'active' | 'completed' | 'error'
+}
+
+export default function Home() {
+  const [selectedImage, setSelectedImage] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [prompt, setPrompt] = useState('')
+  const [aspectRatio, setAspectRatio] = useState<AspectRatio>('16:9')
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [generatedVideo, setGeneratedVideo] = useState<string | null>(null)
+  const [steps, setSteps] = useState<GenerationStep[]>([
+    { id: 'upload', label: '画像のアップロード', status: 'pending' },
+    { id: 'processing', label: 'AI 処理', status: 'pending' },
+    { id: 'generation', label: '動画生成', status: 'pending' },
+    { id: 'complete', label: '完了', status: 'pending' }
+  ])
+  
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    const isHeicByName = /\.(heic|heif)$/i.test(file.name)
+    const isImageByType = file.type.startsWith('image/')
+    const looksLikeImage = isImageByType || isHeicByName
+
+    if (!looksLikeImage) {
+      toast.error('有効な画像ファイルを選択してください（JPG/PNG/HEIC）')
+      return
     }
-  }, []);
 
-  async function fileToDataURL(f: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const fr = new FileReader();
-      fr.onerror = () => reject(new Error('file_read_error'));
-      fr.onload = () => resolve(String(fr.result));
-      fr.readAsDataURL(f);
-    });
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error('画像サイズは 20MB 未満にしてください')
+      return
+    }
+
+    setSelectedImage(file)
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const result = e.target?.result as string
+      // HEIC/HEIF は一部ブラウザでプレビュー不可のため、その場合はメッセージのみ
+      if (isHeicByName || file.type === 'image/heic' || file.type === 'image/heif' || (!file.type && isHeicByName)) {
+        // プレビューは期待どおりに表示できない可能性があるが、アップロードは問題なし
+        setImagePreview('')
+        updateStepStatus('upload', 'completed')
+        toast.success('HEIC画像をアップロードしました（プレビューは表示されない場合があります） ✨')
+      } else {
+        setImagePreview(result)
+        updateStepStatus('upload', 'completed')
+        toast.success('画像をアップロードしました ✨')
+      }
+    }
+    reader.readAsDataURL(file)
   }
 
-  async function onGenerate() {
+  const updateStepStatus = (stepId: string, status: GenerationStep['status']) => {
+    setSteps(prev => prev.map(step => 
+      step.id === stepId ? { ...step, status } : step
+    ))
+  }
+
+  const generateVideo = async () => {
+    if (!selectedImage || !prompt.trim()) {
+      toast.error('画像をアップロードし、説明文を入力してください')
+      return
+    }
+
+    setIsGenerating(true)
+    setGeneratedVideo(null)
+    
     try {
-      setError(null);
-      setVideoUrl(null);
-      if (!file || text.trim().length === 0) {
-        setError('画像とテキストを入力してください');
-        return;
+      updateStepStatus('processing', 'active')
+      
+      // Convert image to base64
+      let base64Image = await new Promise<string>((resolve) => {
+        const reader = new FileReader()
+        reader.onload = (e) => resolve(e.target?.result as string)
+        reader.readAsDataURL(selectedImage)
+      })
+
+      // 一部環境では HEIC/HEIF の MIME が空 or application/octet-stream になることがあるため補正
+      const isHeicByName = /\.(heic|heif)$/i.test(selectedImage.name)
+      const hasHeicType = selectedImage.type === 'image/heic' || selectedImage.type === 'image/heif'
+      if (isHeicByName && !hasHeicType) {
+        // data:application/octet-stream; や data:; を data:image/heic; に置き換える
+        base64Image = base64Image.replace(/^data:[^;]*;/, 'data:image/heic;')
       }
-      setLoading(true);
-      const image = await fileToDataURL(file);
-      const res = await fetch('/api/generate', {
+
+      updateStepStatus('processing', 'completed')
+      updateStepStatus('generation', 'active')
+
+      const response = await fetch('/api/generate-video', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ apiKey, image, text }),
-      });
-      if (!res.ok) {
-        try {
-          const err = await res.json();
-          const msg = err?.message || err?.error || '生成に失敗しました';
-          setError(String(msg));
-        } catch {
-          setError('生成に失敗しました');
-        }
-        return;
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          image: base64Image,
+          prompt: prompt.trim(),
+          aspectRatio,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to generate video')
       }
-      const body = (await res.json()) as { videoUrl?: string };
-      if (!body.videoUrl) {
-        setError('動画URLが取得できませんでした');
-        return;
-      }
-      setVideoUrl(body.videoUrl);
-    } catch (e) {
-      console.error('Generation error:', e);
-      setError('エラーが発生しました');
+
+      const data = await response.json()
+      
+      updateStepStatus('generation', 'completed')
+      updateStepStatus('complete', 'completed')
+      
+      setGeneratedVideo(data.videoUrl)
+      toast.success('動画の生成が完了しました 🎉')
+      
+    } catch (error) {
+      console.error('Error generating video:', error)
+      updateStepStatus('generation', 'error')
+      // 日本語の汎用メッセージを表示（詳細はコンソールで確認可能）
+      toast.error('動画の生成に失敗しました')
     } finally {
-      setLoading(false);
+      setIsGenerating(false)
     }
   }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFile(e.target.files?.[0] ?? null);
-  };
+  const downloadVideo = () => {
+    if (!generatedVideo) return
+    
+    const link = document.createElement('a')
+    link.href = generatedVideo
+    link.download = `veo-generated-video-${Date.now()}.mp4`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    toast.success('動画のダウンロードを開始しました 📥')
+  }
 
+  const resetForm = () => {
+    setSelectedImage(null)
+    setImagePreview(null)
+    setPrompt('')
+    setGeneratedVideo(null)
+    setSteps(prev => prev.map(step => ({ ...step, status: 'pending' })))
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
 
   return (
-    <div className="min-h-screen">
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-20">
-        <header className="text-center mb-12 sm:mb-16">
-          <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight text-slate-900 dark:text-white">AI 動画生成</h1>
-          <p className="mt-3 text-base sm:text-lg text-slate-600 dark:text-slate-300">写真とテキストから魅力的な動画を生成</p>
-        </header>
+    <div className="min-h-screen py-8 px-4">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl flex items-center justify-center">
+              <Film className="w-6 h-6 text-white" />
+            </div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+              動画生成AI
+            </h1>
+          </div>
+          <p className="text-gray-600 text-lg">
+            AI で画像を魅力的な動画に変換 ✨
+          </p>
+        </div>
 
-        <section className="card p-8">
+        {/* Progress Steps */}
+        {(selectedImage || isGenerating) && (
+          <div className="glass-card p-6 mb-8">
+            <div className="flex items-center justify-between">
+              {steps.map((step, index) => (
+                <div key={step.id} className="flex items-center">
+                  <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-300 ${
+                    step.status === 'completed' 
+                      ? 'bg-green-500 border-green-500 text-white' 
+                      : step.status === 'active'
+                      ? 'bg-purple-500 border-purple-500 text-white animate-pulse'
+                      : step.status === 'error'
+                      ? 'bg-red-500 border-red-500 text-white'
+                      : 'bg-gray-100 border-gray-300 text-gray-500'
+                  }`}>
+                    {step.status === 'active' ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : step.status === 'completed' ? (
+                      <span>✓</span>
+                    ) : step.status === 'error' ? (
+                      <span>✗</span>
+                    ) : (
+                      <span>{index + 1}</span>
+                    )}
+                  </div>
+                  <span className={`ml-2 text-sm font-medium ${
+                    step.status === 'completed' ? 'text-green-600' :
+                    step.status === 'active' ? 'text-purple-600' :
+                    step.status === 'error' ? 'text-red-600' :
+                    'text-gray-500'
+                  }`}>
+                    {step.label}
+                  </span>
+                  {index < steps.length - 1 && (
+                    <div className={`w-16 h-0.5 mx-4 ${
+                      steps[index + 1].status === 'completed' || steps[index + 1].status === 'active'
+                        ? 'bg-purple-500'
+                        : 'bg-gray-300'
+                    }`} />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="grid lg:grid-cols-2 gap-8">
+          {/* Input Section */}
           <div className="space-y-6">
-            <div>
-              <label htmlFor="api-key-input" className="field-label mb-1">APIキー</label>
+            {/* Image Upload */}
+            <div className="glass-card p-6">
+              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <ImageIcon className="w-5 h-5" />
+                画像をアップロード
+              </h2>
+              
               <input
-                id="api-key-input"
-                type="password"
-                placeholder="sk-..."
-                value={apiKey}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setApiKey(v);
-                  try { localStorage.setItem('apiKey', v); } catch {}
-                }}
-                className="text-input"
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,.heic,.heif"
+                onChange={handleImageUpload}
+                className="hidden"
               />
+              
+              <button
+                type="button"
+                className="upload-area w-full text-left"
+                onClick={() => fileInputRef.current?.click()}
+                aria-label="画像をアップロード"
+              >
+                {selectedImage ? (
+                  (/\.(heic|heif)$/i.test(selectedImage.name) || selectedImage.type === 'image/heic' || selectedImage.type === 'image/heif') ? (
+                    <div className="relative text-center">
+                      <div className="max-h-64 mx-auto rounded-lg shadow-lg bg-gray-50 p-6 text-gray-600">
+                        このブラウザでは HEIC プレビューに対応していませんが、
+                        画像はアップロードされています。
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          resetForm()
+                        }}
+                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
+                        aria-label="画像を削除"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ) : imagePreview ? (
+                    <div className="relative">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      {/** biome-ignore lint/performance/noImgElement: preview display needed */}
+                      <img 
+                        src={imagePreview} 
+                        alt="アップロードプレビュー" 
+                        className="max-h-64 mx-auto rounded-lg shadow-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          resetForm()
+                        }}
+                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
+                        aria-label="画像を削除"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ) : (
+                    <div>
+                      <Upload className="w-12 h-12 mx-auto mb-4 text-purple-400" />
+                      <p className="text-gray-600 mb-2">クリックして画像をアップロード</p>
+                      <p className="text-sm text-gray-400">PNG, JPG, HEIC（最大 20MB）</p>
+                    </div>
+                  )
+                ) : (
+                  <div>
+                    <Upload className="w-12 h-12 mx-auto mb-4 text-purple-400" />
+                    <p className="text-gray-600 mb-2">クリックして画像をアップロード</p>
+                    <p className="text-sm text-gray-400">PNG, JPG, HEIC（最大 20MB）</p>
+                  </div>
+                )}
+              </button>
             </div>
 
-            <div>
-              <label htmlFor="file-upload" className="field-label mb-1">画像</label>
-              <div className="flex items-center gap-3">
-                <input id="file-upload" type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
-                <label htmlFor="file-upload" className="inline-flex items-center justify-center rounded-xl border border-slate-300 dark:border-slate-600 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 cursor-pointer select-none transition">画像を選択</label>
-                <span className="text-sm text-slate-500 dark:text-slate-400 truncate">{file ? file.name : '未選択'}</span>
+            {/* Text Prompt */}
+            <div className="glass-card p-6">
+              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <Wand2 className="w-5 h-5" />
+                動画の説明
+              </h2>
+              <textarea
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="動画で起こしたいことを説明してください…（例：『キラキラした光と穏やかな風の中、魔法の森を歩く人』）"
+                className="w-full h-32 p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                disabled={isGenerating}
+              />
+              <div className="mt-2 text-sm text-gray-500">
+                {prompt.length}/1024 文字
               </div>
             </div>
 
-            <div>
-              <label htmlFor="content-textarea" className="field-label mb-1">動画の内容</label>
-              <textarea
-                id="content-textarea"
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                placeholder="どんな動画にしたいか簡潔に。例：優しく自己紹介して、最後に手を振る"
-                rows={4}
-                className="text-input resize-none"
-              />
+            {/* Aspect Ratio */}
+            <div className="glass-card p-6">
+              <h2 className="text-xl font-semibold mb-4">アスペクト比</h2>
+              <div className="grid grid-cols-2 gap-4">
+                {(['16:9', '9:16'] as AspectRatio[]).map((ratio) => (
+                  <button
+                    key={ratio}
+                    type="button"
+                    onClick={() => setAspectRatio(ratio)}
+                    disabled={isGenerating}
+                    className={`p-4 rounded-xl border-2 transition-all duration-200 ${
+                      aspectRatio === ratio
+                        ? 'border-purple-500 bg-purple-50 text-purple-700'
+                        : 'border-gray-200 hover:border-gray-300 bg-white'
+                    } ${isGenerating ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                    aria-label={`アスペクト比 ${ratio} を選択`}
+                  >
+                    <div className={`w-full ${ratio === '16:9' ? 'aspect-video' : 'aspect-[9/16]'} bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg mb-2`} />
+                    <div className="text-sm font-medium">{ratio}</div>
+                  </button>
+                ))}
+              </div>
             </div>
 
+            {/* Generate Button */}
             <button
               type="button"
-              onClick={onGenerate}
-              disabled={loading || !file || !text.trim() || !apiKey.trim()}
-              className="btn-primary"
+              onClick={generateVideo}
+              disabled={!selectedImage || !prompt.trim() || isGenerating}
+              className={`w-full gradient-button ${
+                (!selectedImage || !prompt.trim() || isGenerating) 
+                  ? 'opacity-50 cursor-not-allowed transform-none' 
+                  : ''
+              }`}
             >
-              {loading ? '生成中…' : '動画を生成'}
+              {isGenerating ? (
+                <div className="flex items-center justify-center gap-2">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  動画を生成中...
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-2">
+                  <Wand2 className="w-5 h-5" />
+                  動画を生成
+                </div>
+              )}
             </button>
+          </div>
 
-            {error && (
-              <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-            )}
-
-            {videoUrl && (
-              <div className="mt-2">
-                <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-3">生成された動画</h3>
-                <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-600 bg-black">
-                  <video src={videoUrl} controls className="w-full" aria-label="生成された動画">
-                    <track kind="captions" srcLang="ja" label="日本語" />
-                    このブラウザは動画をサポートしていません。
-                  </video>
+          {/* Preview Section */}
+          <div className="glass-card p-6">
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <Play className="w-5 h-5" />
+              動画プレビュー
+            </h2>
+            
+            {generatedVideo ? (
+              <div className="space-y-4">
+                <video
+                  ref={videoRef}
+                  src={generatedVideo}
+                  controls
+                  className="w-full rounded-xl shadow-lg"
+                  style={{ aspectRatio: aspectRatio === '16:9' ? '16/9' : '9/16' }}
+                >
+                  <track kind="captions" src="" label="日本語" default />
+                  お使いのブラウザは video タグに対応していません。
+                </video>
+                
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => videoRef.current?.play()}
+                    className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
+                  >
+                    <Play className="w-4 h-4" />
+                    再生
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={downloadVideo}
+                    className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
+                  >
+                    <Download className="w-4 h-4" />
+                    ダウンロード
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="aspect-video bg-gray-100 rounded-xl flex items-center justify-center">
+                <div className="text-center text-gray-500">
+                  <Film className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                  <p>生成された動画はここに表示されます</p>
                 </div>
               </div>
             )}
           </div>
-        </section>
+        </div>
       </div>
     </div>
-  );
+  )
 }
